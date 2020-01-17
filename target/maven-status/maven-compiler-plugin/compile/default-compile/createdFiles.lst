@@ -1,0 +1,5 @@
+com\rsi\dataObject\H2OApplication.class
+com\rsi\selenium\AllTests.class
+com\rsi\selenium\RsitesterMain.class
+com\rsi\selenium\RsiChromeTester.class
+com\rsi\selenium\factory\H2OTesterConnectionFactory.class

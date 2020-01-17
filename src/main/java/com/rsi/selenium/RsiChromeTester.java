@@ -65,16 +65,17 @@ public class RsiChromeTester {
 		return status;
 		
 	}
-	
+	//TODO Add Action URL param. to this method. That way upon successfull completiong of the action, we will be able to check if the action performed successfully.
 	public String actionPageElement(String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement, String baseURL) throws NoSuchElementException {
 		String status = "Failed";
 		String currentPageUrl = driver.getCurrentUrl();
 		if (!currentPageUrl.equalsIgnoreCase(baseURL))
 			driver.get(baseURL);
 
-        // TODO now check if fieldType is anchor or button.
         if (fieldType.equalsIgnoreCase("anchor")) {
 			driver.findElement(By.linkText(fieldName)).sendKeys(Keys.ENTER);
+			// TODO new method checkStatus will decide whether or not action resulted in success or failure. params should be actionUrl, readElement. one of the to should be populated.
+			status = checkStatus(url, readElement);
 		}
 		else {
 			WebElement userNameElement = driver.findElement(By.id(fieldName));
@@ -94,6 +95,11 @@ public class RsiChromeTester {
 		
 		return status;
 		
+	}
+
+	private String checkStatus(String url, String readElement) {
+		// TODO if url is where the page is at or if readELement is true then return success.
+		return "success";
 	}
 
 }

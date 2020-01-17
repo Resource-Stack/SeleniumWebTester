@@ -1,10 +1,7 @@
 package com.rsi.selenium;
 
 import org.apache.log4j.Logger;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 
 public class RsiChromeTester {
@@ -71,22 +68,28 @@ public class RsiChromeTester {
 	
 	public String actionPageElement(String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement, String baseURL) throws NoSuchElementException {
 		String status = "Failed";
-		// TODO Auto-generated method stub
-		driver.get(baseURL);
-        // Alternatively the same thing can be done like this
-        
+		String currentPageUrl = driver.getCurrentUrl();
+		if (!currentPageUrl.equalsIgnoreCase(baseURL))
+			driver.get(baseURL);
 
-        WebElement userNameElement = driver.findElement(By.id(fieldName));
-		logger.debug("CHECKING WHETHER ACTION WORKS OR NOT: " + driver.findElement(By.name(readElement)));
-		driver.findElement(By.name(readElement)).click();
-		//String valueOfElement = driver.getTitle();
-		//logger.debug("Page title is: " + driver.getTitle());
-		/*if(titleOfResultPage.equals("Successfully logged in")) {
+        // TODO now check if fieldType is anchor or button.
+        if (fieldType.equalsIgnoreCase("anchor")) {
+			driver.findElement(By.linkText(fieldName)).sendKeys(Keys.ENTER);
+		}
+		else {
+			WebElement userNameElement = driver.findElement(By.id(fieldName));
+			logger.debug("CHECKING WHETHER ACTION WORKS OR NOT: " + driver.findElement(By.name(readElement)));
+			driver.findElement(By.name(readElement)).click();
+			//String valueOfElement = driver.getTitle();
+			//logger.debug("Page title is: " + driver.getTitle());
+			/*if(titleOfResultPage.equals("Successfully logged in")) {
 			driver.close();
 			// Check the title of the page
 			status = "Success";
 			logger.debug("Page title is: " + driver.getTitle());
         }*/
+		}
+
         
 		
 		return status;

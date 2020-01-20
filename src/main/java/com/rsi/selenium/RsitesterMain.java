@@ -64,8 +64,6 @@ public class RsitesterMain {
 					while (rsForTestCases.next()) {
 						int currentTestCaseId = rsForTestCases.getInt("id");
 						logger.debug("Now running test case [ " + rsForTestCases.getString("id") + " ], for field name [ " + rsForTestCases.getString("field_name") +" ] ");
-						// Run Chrometest.
-						//status = chromeTester.testLoginPage("https://demo.bhix.org", "CacheUserName", "CachePassword", "btnSearch", "guest", "guest", "success_field");
 						if (identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("action")) == "INSPECT") {
 							try {
 							status = chromeTester.testPageElement(app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"));
@@ -88,11 +86,25 @@ public class RsitesterMain {
 							}
 							
 						}
+						else if(identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("action")) == "INPUT") {
+							try{
+								status = chromeTester.inputPageElement(app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("base_url"));
+							}catch(NoSuchElementException nse) {
+								logger.error("Error when handling Input type case... " + nse.getMessage());
+								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId);
+								continue;
+							}
+						}
 						logger.debug("Status returned is [ " + status + " ]");	
 					}
 				}
 				//updateTestSuiteResultWithComplete(conn, );
-				updateSchedulerWithComplete(conn, currentSchedulerId, currentSuiteId);
+				if(status.equalsIgnoreCase("SUCCESS")) {
+					updateSchedulerWithComplete(conn, currentSchedulerId, currentSuiteId);
+				}
+				else {
+					updateSchedulerWithError(conn, currentSchedulerId, currentSuiteId, app);
+				}
 				
 			}
 		} catch (SQLException e) {
@@ -147,7 +159,7 @@ public class RsitesterMain {
 		}
 		try {
 			pstmt = conn.prepareStatement("INSERT INTO result_suites (rd_id, test_suite_id) VALUES(?,?)");
-			pstmt.setInt(1, currentSchedulerId);
+			pstmt.setInt(1, 1);
 			pstmt.setInt(2, currentSuiteId);
 			if (pstmt.execute()) {
 				logger.info("Updated Scheduler id [" + currentSchedulerId + " ], with Error");
@@ -253,8 +265,7 @@ public class RsitesterMain {
 
 	private static String identifyTestCase(String fieldType, String inputValue,
 			String action) {
-		// TODO Auto-generated method stub
-		//string - field_type ----- string2 - input_value ----------- string3 - action   
+		//string - field_type ----- string2 - input_value ----------- string3 - action
 		if (fieldType.equalsIgnoreCase("anchor") || fieldType.equalsIgnoreCase("span")){
 			if (action != null) {
 				return "ACTION";

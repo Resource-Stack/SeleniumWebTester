@@ -99,7 +99,20 @@ public class RsiChromeTester {
 
 	private String checkStatus(String url, String readElement) {
 		// TODO if url is where the page is at or if readELement is true then return success.
-		return "success";
+		return "failure";
 	}
 
+	public String inputPageElement(String url, String loginName, String loginPwd, String fieldName, String field_type, String inputValue, String base_url) {
+		String status = "Failed";
+		String currentPageUrl = driver.getCurrentUrl();
+		if (!currentPageUrl.equalsIgnoreCase(base_url))
+			driver.get(base_url);
+		WebElement element = driver.findElement(By.id(fieldName));
+		element.sendKeys(inputValue);
+		// TODO new method checkStatus will decide whether or not action resulted in success or failure. params should be actionUrl, readElement. one of the to should be populated.
+		status = checkStatus(url, fieldName);
+
+		return status;
+
+	}
 }

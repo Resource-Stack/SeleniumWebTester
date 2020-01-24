@@ -1,8 +1,12 @@
 package com.rsi.selenium;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
+
+import java.io.File;
+import java.sql.*;
 
 public class RsiChromeTester {
 	final static Logger logger = Logger.getLogger(RsiChromeTester.class);
@@ -44,10 +48,11 @@ public class RsiChromeTester {
 		
 		return status;
 	}
-	public String testPageElement(String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement) throws NoSuchElementException {
+	public String testPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) throws NoSuchElementException {
 		String status = "Failed";
 		// TODO Auto-generated method stub
-		driver.get(url);
+
+		//driver.get(url);
         // Alternatively the same thing can be done like this
         
 
@@ -60,16 +65,24 @@ public class RsiChromeTester {
 			status = "Success";
 			logger.debug("Page title is: " + driver.getTitle());
         }*/
-        
+
+		if(!status.equalsIgnoreCase("SUCCESS")){
+			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId);
+			takeScreenshot(conn, resultCaseId);
+		}
+		else {
+			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId);
+
+		}
 		
 		return status;
 		
 	}
 	//TODO Add Action URL param. to this method. That way upon successfull completiong of the action, we will be able to check if the action performed successfully.
-	public String actionPageElement(String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement, String baseURL) throws NoSuchElementException {
+	public String actionPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement, String baseURL, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) throws NoSuchElementException {
 		String status = "Failed";
 		String currentPageUrl = driver.getCurrentUrl();
-		if (!currentPageUrl.equalsIgnoreCase(baseURL))
+		if (!currentPageUrl.equalsIgnoreCase(baseURL) && currentTestSequence == 1)
 			driver.get(baseURL);
 
         if (fieldType.equalsIgnoreCase("anchor")) {
@@ -78,9 +91,9 @@ public class RsiChromeTester {
 			status = checkStatus(url, readElement);
 		}
 		else {
-			WebElement userNameElement = driver.findElement(By.id(fieldName));
-			logger.debug("CHECKING WHETHER ACTION WORKS OR NOT: " + driver.findElement(By.name(readElement)));
-			driver.findElement(By.name(readElement)).click();
+			WebElement clickableElement = driver.findElement(By.id(fieldName));
+			//logger.debug("CHECKING WHETHER ACTION WORKS OR NOT: " + driver.findElement(By.name(readElement)));
+			clickableElement.click();
 			//String valueOfElement = driver.getTitle();
 			//logger.debug("Page title is: " + driver.getTitle());
 			/*if(titleOfResultPage.equals("Successfully logged in")) {
@@ -91,7 +104,14 @@ public class RsiChromeTester {
         }*/
 		}
 
-        
+		if(!status.equalsIgnoreCase("SUCCESS")){
+			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId);
+			takeScreenshot(conn, resultCaseId);
+		}
+		else {
+			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId);
+
+		}
 		
 		return status;
 		
@@ -102,17 +122,117 @@ public class RsiChromeTester {
 		return "failure";
 	}
 
-	public String inputPageElement(String url, String loginName, String loginPwd, String fieldName, String field_type, String inputValue, String base_url) {
+	public String inputPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String field_type, String inputValue, String base_url, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
 		String status = "Failed";
 		String currentPageUrl = driver.getCurrentUrl();
-		if (!currentPageUrl.equalsIgnoreCase(base_url))
+		if (!currentPageUrl.equalsIgnoreCase(base_url) && currentTestSequence == 1)
 			driver.get(base_url);
 		WebElement element = driver.findElement(By.id(fieldName));
 		element.sendKeys(inputValue);
 		// TODO new method checkStatus will decide whether or not action resulted in success or failure. params should be actionUrl, readElement. one of the to should be populated.
 		status = checkStatus(url, fieldName);
 
+		if(!status.equalsIgnoreCase("SUCCESS")){
+			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId);
+			takeScreenshot(conn, resultCaseId);
+		}
+		else {
+			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId);
+
+		}
+
 		return status;
 
+	}
+
+	private long updateTestCaseWithSuccess(Connection conn, int currentTestCaseId, int currentSchedulerId) {
+		long newResultCaseId = -1;
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id) VALUES(?,?,?)");
+			pstmt.setInt(1, 1);
+			pstmt.setInt(2, currentTestCaseId);
+			pstmt.setInt(3, currentSchedulerId);
+			if (pstmt.execute()) {
+				ResultSet rs = pstmt.getGeneratedKeys();
+
+				if (rs.next()) {
+					newResultCaseId = rs.getLong(1);
+					logger.info("Inserted ID -" + newResultCaseId); // display inserted record
+				}
+				logger.info("Inserted TestCase Result id [" + currentTestCaseId + " ], with Success");
+			}
+			else {
+				logger.error("Could not inserted the Test Case id in Results [" + currentTestCaseId + " ] with Error Status. Please delete it manually. ");
+			}
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			logger.error("Could not update the Test Case with Result for id [" + currentTestCaseId + " ] with Success Status. Please delete it manually. ");
+			e.printStackTrace();
+		} finally {
+			try {
+				pstmt.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		return newResultCaseId;
+
+	}
+
+	private String takeScreenshot(Connection conn, long resultCaseId) {
+		String fileName = new Long(resultCaseId).toString()  +".png";
+		try
+		{ TakesScreenshot ts=(TakesScreenshot)driver;
+
+			File source=ts. getScreenshotAs(OutputType. FILE);
+			FileUtils. copyFile(source, new File("./Screenshots/"+ fileName));
+			logger.info("Screenshot taken");
+			// Now save the file name to the database.
+			PreparedStatement pstmt = conn.prepareStatement("UPDATE result_cases SET screenshot_file_location = ? WHERE id = ?");
+			pstmt.setString(1,fileName);
+			pstmt.setLong(2, resultCaseId);
+
+			pstmt.execute();
+
+		} catch (Exception e) {
+			logger.error("Exception while taking screenshot " + e.getMessage());
+		}
+		return fileName;
+	}
+
+	private long updateTestCaseWithError(Connection conn, int currentTestCaseId, int currentSchedulerId) {
+		long newResultCaseId = -1;
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id) VALUES(?,?,?)", Statement.RETURN_GENERATED_KEYS);
+			pstmt.setInt(1, 2);
+			pstmt.setInt(2, currentTestCaseId);
+			pstmt.setInt(3, currentSchedulerId);
+			pstmt.execute();
+			ResultSet rs = pstmt.getGeneratedKeys();
+
+			if (rs.next()) {
+				newResultCaseId = rs.getLong(1);
+				logger.info("Inserted ID -" + newResultCaseId); // display inserted record
+			}
+			logger.info("Inserted TestCase Result id [" + currentTestCaseId + " ], with Error");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			logger.error("Could not update the Test Case with Result for id [" + currentTestCaseId + " ] with Error Status. Please delete it manually. ");
+			e.printStackTrace();
+		} finally {
+			try {
+				pstmt.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		return newResultCaseId;
 	}
 }

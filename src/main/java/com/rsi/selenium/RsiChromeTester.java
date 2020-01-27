@@ -50,7 +50,7 @@ public class RsiChromeTester {
 	}
 	public String testPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String xpath, String fieldType, String readElement, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
 		String status = "Initial";
-		WebElement userNameElement;
+		WebElement userNameElement = null;
 		String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		String endTime = null;
 		try {
@@ -65,11 +65,22 @@ public class RsiChromeTester {
 			else {
 				userNameElement = driver.findElement(By.id(fieldName));
 			}
-			String valueOfElement = driver.getTitle();
+
+			String valueOfElement = userNameElement.getAttribute("value");
 			logger.debug("Page title is: " + driver.getTitle());
 			if(status.equalsIgnoreCase("Initial")) {
+				if(!com.rsi.utils.RsiTestingHelper.checkEmpty(valueOfElement) || !com.rsi.utils.RsiTestingHelper.checkEmpty(readElement)) {
+					if(valueOfElement.equalsIgnoreCase(readElement)) {
+						status = "Success";
+					}
+					else {
+						status = "Failed";
+					}
+				}
+				else {
+					status = "Success";
+				}
 				logger.info("Element found " + fieldName + " successfully.");
-				status = "Success";
 			}
 			endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		} catch (NoSuchElementException nse) {
@@ -109,7 +120,7 @@ public class RsiChromeTester {
 				// TODO new method checkStatus will decide whether or not action resulted in success or failure. params should be actionUrl, readElement. one of the to should be populated.
 				status = checkStatus(url, readElement, actionUrl);
 			}
-			else if(fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("text")) {
+			else if(fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("radio") || fieldType.equalsIgnoreCase("checkbox") || fieldType.equalsIgnoreCase("button")) {
 				if(com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName) || !com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)){
 					if(com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
 						status = "Failed";
@@ -127,11 +138,17 @@ public class RsiChromeTester {
 			if(!status.equalsIgnoreCase("success")){
 				if(action.equalsIgnoreCase("Click") ) {
 					clickableElement.click();
-					status = "Success";
+					if(!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl))
+						status = checkStatus(url, readElement, actionUrl);
+					else
+						status = "Success";
 				}
 				else if(action.equalsIgnoreCase("tab")) {
 					clickableElement.sendKeys(Keys.TAB);
-					status = "Success";
+					if(!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl))
+						status = checkStatus(url, readElement, actionUrl);
+					else
+						status = "Success";
 				}
 			}
 
@@ -163,6 +180,7 @@ public class RsiChromeTester {
 				return "Success";
 			}
 			else {
+				logger.debug("In check status method returning false since actionUrl [" + actionUrl + "] is not the same as the url [" + driver.getCurrentUrl() + "]");
 				return "Failed";
 			}
 		}
@@ -275,7 +293,7 @@ public class RsiChromeTester {
 		long newResultCaseId = -1;
 		PreparedStatement pstmt = null;
 		try {
-			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, created_at, updated_at) VALUES(?,?,?, STR_TO_DATE(?,'%Y-%m-%d %H:%i %s'),STR_TO_DATE(?,'%Y-%m-%d %H:%i %s'))", Statement.RETURN_GENERATED_KEYS);
+			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, created_at, updated_at) VALUES(?,?,?, STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'),STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'))", Statement.RETURN_GENERATED_KEYS);
 			pstmt.setInt(1, 2);
 			pstmt.setInt(2, currentTestCaseId);
 			pstmt.setInt(3, currentSchedulerId);

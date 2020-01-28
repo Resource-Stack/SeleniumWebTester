@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.io.File;
 import java.sql.*;
@@ -12,12 +13,17 @@ import java.util.ArrayList;
 public class RsiChromeTester {
 	final static Logger logger = Logger.getLogger(RsiChromeTester.class);
 	private WebDriver driver;
+	private ChromeOptions options = new ChromeOptions();
 	public WebDriver getDriver() {
 		return driver;
 	}
+
 	public RsiChromeTester() {
 		System.setProperty("webdriver.chrome.driver", "C:\\java_libs\\chromedriver.exe");
+		options.addArguments("--headless");
+
 		driver = new ChromeDriver();
+
 		
 	}
 	public String loginToApp(String url_to_test, String userNameField, String passwordField, String btnField, 

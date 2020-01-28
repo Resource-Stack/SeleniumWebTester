@@ -119,7 +119,16 @@ public class RsitesterMain {
 								continue;
 							}
 						}
-						logger.debug("Status returned is [ " + status + " ]");	
+						logger.debug("Status returned is [ " + status + " ]");
+						if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("new_tab"))) {
+							chromeTester.switchToNewTab();
+							try {
+								TimeUnit.SECONDS.sleep(15);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+
 					}
 				}
 				//updateTestSuiteResultWithComplete(conn, );

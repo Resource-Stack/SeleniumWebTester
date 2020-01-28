@@ -7,6 +7,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 
 import java.io.File;
 import java.sql.*;
+import java.util.ArrayList;
 
 public class RsiChromeTester {
 	final static Logger logger = Logger.getLogger(RsiChromeTester.class);
@@ -105,7 +106,7 @@ public class RsiChromeTester {
 	}
 	//TODO Add Action URL param. to this method. That way upon successfull completiong of the action, we will be able to check if the action performed successfully.
 	public String actionPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement, String xpath, String action, String actionUrl, String baseURL, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
-		String status = "Failed";
+		String status = "Initial";
 		WebElement clickableElement = null;
 		String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		String endTime = "";
@@ -116,7 +117,22 @@ public class RsiChromeTester {
 				driver.get(baseURL);
 
 			if (fieldType.equalsIgnoreCase("anchor")) {
-				driver.findElement(By.linkText(fieldName)).sendKeys(Keys.ENTER);
+				if(!com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName)){
+					clickableElement = driver.findElement(By.linkText(fieldName));
+					clickableElement.sendKeys(Keys.ENTER);
+				}
+				else if (!com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
+					if(action.equalsIgnoreCase("click")) {
+						clickableElement = driver.findElement(By.xpath(xpath));
+						clickableElement.click();
+					}
+					else{
+						clickableElement = driver.findElement(By.xpath(xpath));
+						clickableElement.sendKeys(Keys.ENTER);
+					}
+
+				}
+
 				// TODO new method checkStatus will decide whether or not action resulted in success or failure. params should be actionUrl, readElement. one of the to should be populated.
 				status = checkStatus(url, readElement, actionUrl);
 			}
@@ -135,7 +151,7 @@ public class RsiChromeTester {
 
 			}
 			//NEXT Section should only be called if the status has not been populated as yet. Which in the case of anchor tag is already taken care of. (Sameer 01262020)
-			if(!status.equalsIgnoreCase("success")){
+			if(status.equalsIgnoreCase("initial")){
 				if(action.equalsIgnoreCase("Click") ) {
 					clickableElement.click();
 					if(!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl))
@@ -321,5 +337,13 @@ public class RsiChromeTester {
 		}
 
 		return newResultCaseId;
+	}
+
+	public boolean switchToNewTab() {
+		ArrayList<String> tabs = new ArrayList<String> (driver.getWindowHandles());
+		logger.debug("number of tabs are " + tabs.size());
+		driver.switchTo().window(tabs.get(1));
+
+		return true;
 	}
 }

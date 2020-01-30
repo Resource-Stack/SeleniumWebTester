@@ -5,10 +5,13 @@ import org.apache.log4j.Logger;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class RsiChromeTester {
 	final static Logger logger = Logger.getLogger(RsiChromeTester.class);
@@ -33,6 +36,19 @@ public class RsiChromeTester {
 		driver.get(url_to_test);
         // Alternatively the same thing can be done like this
         
+		// TODO Prestep - Prior to login the code needs to browse to the verify step.
+		//if (url_to_test.contains("dev11.resourcestack.com")) {
+		if(commonHealthCoreUrl(url_to_test)) {
+			WebElement emailElement = driver.findElement(By.xpath("/html/body/div[1]/div/div/div/div/div/div/div[4]/form/fieldset/div[1]/div/input"));
+			emailElement.sendKeys(userName);
+			WebElement verifyElement = driver.findElement(By.xpath("/html/body/div[1]/div/div/div/div/div/div/div[4]/form/fieldset/div[2]/div/button"));
+			verifyElement.click();
+			try {
+				TimeUnit.SECONDS.sleep(15);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 
         WebElement userNameElement = driver.findElement(By.id(userNameField));
 		WebElement passwordElement = driver.findElement(By.id(passwordField));
@@ -41,7 +57,26 @@ public class RsiChromeTester {
 		passwordElement.sendKeys(password);
 		
 		// find submit button and click
-		driver.findElement(By.name(btnField)).click();
+		try {
+			driver.findElement(By.name(btnField)).click();
+
+		} catch (NoSuchElementException nse) {
+			logger.error("btnField [" + btnField + "] with id not found. try and see if hitting Enter works on a submit form");
+			passwordElement.sendKeys(Keys.ENTER);
+
+		}
+
+		if(commonHealthCoreUrl(url_to_test)) {
+			WebDriverWait wait = new WebDriverWait(driver, 3000);
+			wait.until(ExpectedConditions.alertIsPresent());
+			Alert alert = driver.switchTo().alert();
+			alert.accept();
+
+			wait.until(ExpectedConditions.alertIsPresent());
+			alert = driver.switchTo().alert();
+			alert.accept();
+		}
+
 
 		// on the result page get page title and some element
 		String titleOfResultPage = driver.getTitle();
@@ -55,11 +90,28 @@ public class RsiChromeTester {
 		
 		return status;
 	}
-	public String testPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String xpath, String fieldType, String readElement, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
+
+	private boolean commonHealthCoreUrl(String url_to_test) {
+		String[] chcUrls = {"dev11.resourcestack.com", "demo.commonhealthcore.org"};
+		boolean status = false;
+
+		for(String s : chcUrls) {
+			if(url_to_test.contains(s)) {
+				status = true;
+			}
+		}
+
+		return status;
+	}
+
+	public String testPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String xpath, String fieldType, String readElement, String need_screenshot, String initialDescription, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
 		String status = "Initial";
 		WebElement userNameElement = null;
 		String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		String endTime = null;
+		String description = initialDescription;
+		String valueOfElement = null;
+
 		try {
 			if ((fieldName == null || fieldName.trim().length() == 0) || (xpath != null && xpath.trim().length() > 0)) {
 				if(xpath == null || xpath.trim().length() == 0){
@@ -73,7 +125,12 @@ public class RsiChromeTester {
 				userNameElement = driver.findElement(By.id(fieldName));
 			}
 
-			String valueOfElement = userNameElement.getAttribute("value");
+			if(fieldType.equalsIgnoreCase("label") || fieldType.equalsIgnoreCase("text")) {
+				valueOfElement = userNameElement.getAttribute("value");
+			} else if(fieldType.equalsIgnoreCase("th")) {
+				valueOfElement = userNameElement.getText();
+			}
+
 			logger.debug("Page title is: " + driver.getTitle());
 			if(status.equalsIgnoreCase("Initial")) {
 				if(!com.rsi.utils.RsiTestingHelper.checkEmpty(valueOfElement) || !com.rsi.utils.RsiTestingHelper.checkEmpty(readElement)) {
@@ -82,6 +139,7 @@ public class RsiChromeTester {
 					}
 					else {
 						status = "Failed";
+						description.concat(" - No read element or value onthe page to inspect");
 					}
 				}
 				else {
@@ -93,29 +151,35 @@ public class RsiChromeTester {
 		} catch (NoSuchElementException nse) {
 			nse.printStackTrace();
 			logger.error("Error no element found on the page " + nse.getMessage());
+			description.concat(" - " + nse.getMessage());
 			status = "Failure";
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Error other exception " + e.getMessage());
+			description.concat(" - " + e.getMessage());
 			status = "Failure";
 		}
 
 		if(!status.equalsIgnoreCase("SUCCESS")){
-			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime);
+			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
 			takeScreenshot(conn, resultCaseId);
 		}
 		else {
-			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime, endTime);
+			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
+			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
+				takeScreenshot(conn, resultCaseId);
+			}
 		}
 		
 		return status;
 	}
 	//TODO Add Action URL param. to this method. That way upon successfull completiong of the action, we will be able to check if the action performed successfully.
-	public String actionPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement, String xpath, String action, String actionUrl, String baseURL, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
+	public String actionPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement, String xpath, String action, String actionUrl, String baseURL, String need_screenshot, String initialDescription, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
 		String status = "Initial";
 		WebElement clickableElement = null;
 		String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		String endTime = "";
+		String description = initialDescription;
 
 		try {
 			String currentPageUrl = driver.getCurrentUrl();
@@ -146,6 +210,7 @@ public class RsiChromeTester {
 				if(com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName) || !com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)){
 					if(com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
 						status = "Failed";
+						description.concat(" - " + " No element id found on the test case.");
 					}
 					else {
 						clickableElement = driver.findElement(By.xpath(xpath));
@@ -177,19 +242,24 @@ public class RsiChromeTester {
 		}catch (NoSuchElementException nse) {
 			nse.printStackTrace();
 			logger.error("Error no element found on the page " + nse.getMessage());
+			description.concat(" - " + nse.getMessage() + ".");
 			status = "Failure";
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Error other exception " + e.getMessage());
+			description.concat(" - " + e.getMessage() + ".");
 			status = "Failure";
 		}
 		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		if(!status.equalsIgnoreCase("SUCCESS")){
-			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime);
+			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
 			takeScreenshot(conn, resultCaseId);
 		}
 		else {
-			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime, endTime);
+			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
+			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
+				takeScreenshot(conn, resultCaseId);
+			}
 		}
 		
 		return status;
@@ -210,12 +280,13 @@ public class RsiChromeTester {
 		return "Success";
 	}
 
-	public String inputPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String field_type, String inputValue, String xpath, String base_url, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
+	public String inputPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String field_type, String inputValue, String xpath, String base_url, String need_screenshot,  String initialDescription, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
 		String status = "Failed";
 		WebElement element = null;
 		String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		String endTime = "";
-				String currentPageUrl = driver.getCurrentUrl();
+		String currentPageUrl = driver.getCurrentUrl();
+		String description = initialDescription;
 		try {
 			if (!currentPageUrl.equalsIgnoreCase(base_url) && currentTestSequence == 1)
 				driver.get(base_url);
@@ -233,33 +304,39 @@ public class RsiChromeTester {
 		}catch (NoSuchElementException nse) {
 			nse.printStackTrace();
 			logger.error("Error no element found on the page " + nse.getMessage());
+			description.concat(" - " + nse.getMessage() + ".");
 			status = "Failure";
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Error other exception " + e.getMessage());
+			description.concat(" - " + e.getMessage() + ".");
 			status = "Failure";
 		}
 		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		if(!status.equalsIgnoreCase("SUCCESS")){
-			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime);
+			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
 			takeScreenshot(conn, resultCaseId);
 		}
 		else {
-			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime, endTime);
+			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
+			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
+				takeScreenshot(conn, resultCaseId);
+			}
 		}
 		return status;
 	}
 
-	private long updateTestCaseWithSuccess(Connection conn, int currentTestCaseId, int currentSchedulerId, String startTime, String endTime) {
+	private long updateTestCaseWithSuccess(Connection conn, int currentTestCaseId, int currentSchedulerId, String startTime, String endTime, String description) {
 		long newResultCaseId = -1;
 		PreparedStatement pstmt = null;
 		try {
-			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, created_at, updated_at) VALUES(?,?,?,STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'),STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'))");
+			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, error_description, created_at, updated_at) VALUES(?,?,?,?,STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'),STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'))");
 			pstmt.setInt(1, 1);
 			pstmt.setInt(2, currentTestCaseId);
 			pstmt.setInt(3, currentSchedulerId);
-			pstmt.setString(4,startTime);
-			pstmt.setString(5, endTime);
+            pstmt.setString(4,description);
+			pstmt.setString(5,startTime);
+			pstmt.setString(6, endTime);
 			if (pstmt.execute()) {
 				ResultSet rs = pstmt.getGeneratedKeys();
 
@@ -311,16 +388,17 @@ public class RsiChromeTester {
 		return fileName;
 	}
 
-	private long updateTestCaseWithError(Connection conn, int currentTestCaseId, int currentSchedulerId, String startTime, String endTime) {
+	private long updateTestCaseWithError(Connection conn, int currentTestCaseId, int currentSchedulerId, String startTime, String endTime, String description) {
 		long newResultCaseId = -1;
 		PreparedStatement pstmt = null;
 		try {
-			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, created_at, updated_at) VALUES(?,?,?, STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'),STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'))", Statement.RETURN_GENERATED_KEYS);
+			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, error_description, created_at, updated_at) VALUES(?,?,?,?, STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'),STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'))", Statement.RETURN_GENERATED_KEYS);
 			pstmt.setInt(1, 2);
 			pstmt.setInt(2, currentTestCaseId);
 			pstmt.setInt(3, currentSchedulerId);
-			pstmt.setString(4, startTime);
-			pstmt.setString(5, endTime);
+			pstmt.setString(4, description);
+			pstmt.setString(5, startTime);
+			pstmt.setString(6, endTime);
 			pstmt.execute();
 			ResultSet rs = pstmt.getGeneratedKeys();
 

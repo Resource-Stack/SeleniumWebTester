@@ -54,11 +54,13 @@ public class RsitesterMain {
 						logger.error("Element not found Error [ " + nse.getMessage() + " ]");
 						updateSchedulerWithError(conn, currentSchedulerId, currentSuiteId, app);
 						continue;
+					} catch (Exception e) {
+						e.printStackTrace();
 					}
 				}
 				logger.debug("Now starting to process Scheduled Job Id [ " + rs.getString("id")+ " ], this job was scheduled on [ " + rs.getString(3) + " ], suite id is [ " + rs.getInt("test_suite_id") + " ]");
 				// Now try to access all the test cases for the test_suite_id submitted for this run.
-				pstmt = conn.prepareStatement("SELECT tc.id as id, tc.field_name as field_name, tc.field_type as field_type, tc.read_element as read_element, tc.xpath as xpath, tc.input_value as input_value, tc.string as string, tc.action as action, ts.base_url as base_url, tc.action_url as action_url, tc.sleeps as sleeps, cs.sequence as sequence, tc.new_tab as new_tab FROM test_cases tc, case_suites cs, test_suites ts WHERE cs.test_case_id = tc.id AND ts.id = cs.test_suite_id AND cs.test_suite_id = ? ORDER BY cs.sequence");
+				pstmt = conn.prepareStatement("SELECT tc.id as id, tc.field_name as field_name, tc.field_type as field_type, tc.read_element as read_element, tc.xpath as xpath, tc.input_value as input_value, tc.string as string, tc.action as action, ts.base_url as base_url, tc.action_url as action_url, tc.sleeps as sleeps, cs.sequence as sequence, tc.new_tab as new_tab, tc.need_screenshot as need_screenshot, tc.description as description FROM test_cases tc, case_suites cs, test_suites ts WHERE cs.test_case_id = tc.id AND ts.id = cs.test_suite_id AND cs.test_suite_id = ? ORDER BY cs.sequence");
 				pstmt.setInt(1, rs.getInt("test_suite_id"));
 				if (pstmt.execute() == true) {
 					rsForTestCases = pstmt.getResultSet();
@@ -68,7 +70,7 @@ public class RsitesterMain {
 						logger.debug("Now running test case [ " + rsForTestCases.getString("id") + " ], for field name [ " + rsForTestCases.getString("field_name") +" ] and the sequence is [" + currentTestSequence + "]");
 						if (identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("action")) == "INSPECT") {
 							try {
-								status = chromeTester.testPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("xpath"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), currentSchedulerId, currentTestCaseId, currentTestSequence);
+								status = chromeTester.testPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("xpath"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
 									TimeUnit.SECONDS.sleep(15);
 								}
@@ -86,7 +88,7 @@ public class RsitesterMain {
 						}
 						else if (identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("action")) == "ACTION") {
 							try {
-								status = chromeTester.actionPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("xpath"), rsForTestCases.getString("action"), rsForTestCases.getString("action_url"),rsForTestCases.getString("base_url"), currentSchedulerId, currentTestCaseId, currentTestSequence);
+								status = chromeTester.actionPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("xpath"), rsForTestCases.getString("action"), rsForTestCases.getString("action_url"),rsForTestCases.getString("base_url"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
 									TimeUnit.SECONDS.sleep(15);
 								}
@@ -104,7 +106,7 @@ public class RsitesterMain {
 						}
 						else if(identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("action")) == "INPUT") {
 							try{
-								status = chromeTester.inputPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("xpath"), rsForTestCases.getString("base_url"), currentSchedulerId, currentTestCaseId, currentTestSequence);
+								status = chromeTester.inputPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("xpath"), rsForTestCases.getString("base_url"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
 									TimeUnit.SECONDS.sleep(15);
 								}

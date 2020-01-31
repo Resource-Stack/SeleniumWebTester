@@ -127,20 +127,33 @@ public class RsiChromeTester {
 
 			if(fieldType.equalsIgnoreCase("label") || fieldType.equalsIgnoreCase("text")) {
 				valueOfElement = userNameElement.getAttribute("value");
-			} else if(fieldType.equalsIgnoreCase("th")) {
+			} else if(fieldType.equalsIgnoreCase("th") || fieldType.equalsIgnoreCase("td")) {
 				valueOfElement = userNameElement.getText();
 			}
 
 			logger.debug("Page title is: " + driver.getTitle());
 			if(status.equalsIgnoreCase("Initial")) {
 				if(!com.rsi.utils.RsiTestingHelper.checkEmpty(valueOfElement) || !com.rsi.utils.RsiTestingHelper.checkEmpty(readElement)) {
-					if(valueOfElement.equalsIgnoreCase(readElement)) {
-						status = "Success";
+					if(readElement.startsWith("{") && readElement.endsWith("}")){
+						// We know that we need to check a regular expression
+						if(valueOfElement.matches(readElement.substring(1,readElement.length()-1))) {
+							status = "Success";
+						}
+						else {
+							status = "Failed";
+							description.concat(" - No read element or value onthe page to inspect");
+						}
 					}
 					else {
-						status = "Failed";
-						description.concat(" - No read element or value onthe page to inspect");
+						if(valueOfElement.equalsIgnoreCase(readElement)) {
+							status = "Success";
+						}
+						else {
+							status = "Failed";
+							description.concat(" - No read element or value onthe page to inspect");
+						}
 					}
+
 				}
 				else {
 					status = "Success";

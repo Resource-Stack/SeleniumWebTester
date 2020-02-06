@@ -303,6 +303,9 @@ public class RsitesterMain {
 
 	private static String identifyTestCase(String fieldType, String inputValue,
 			String action) {
+		if(!com.rsi.utils.RsiTestingHelper.checkEmpty(action)) {
+			return "ACTION";
+		}
 		//string - field_type ----- string2 - input_value ----------- string3 - action
 		if (fieldType.equalsIgnoreCase("anchor") || fieldType.equalsIgnoreCase("span")){
 			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(action)) {

@@ -11,6 +11,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class RsiChromeTester {
@@ -115,7 +116,36 @@ public class RsiChromeTester {
 		try {
 			if ((fieldName == null || fieldName.trim().length() == 0) || (xpath != null && xpath.trim().length() > 0)) {
 				if(xpath == null || xpath.trim().length() == 0){
-					status = "Failed";
+					//TODO now check to see if we can identify the element from readElement. (Sameer 02012020).
+					if(!com.rsi.utils.RsiTestingHelper.checkEmpty(readElement)) {
+						// Now try to identify the first occurence of fieldType for the readElement.
+						if(fieldType.equalsIgnoreCase("h3")) {
+							List<WebElement> elements = driver.findElements(By.tagName("h3"));
+
+							// now iterate through the list of elements and see if anyone has the content you are looking for.
+							for (WebElement w : elements) {
+								if (w.getText().equalsIgnoreCase(readElement) || w.getText().matches(readElement.substring(1, readElement.length() - 1))) {
+									status = "Success";
+								}
+							}
+						}
+						else if(fieldType.equalsIgnoreCase("b")) {
+							List<WebElement> elements = driver.findElements(By.tagName("b"));
+
+							// now iterate through the list of elements and see if anyone has the content you are looking for.
+							for (WebElement w : elements) {
+								if (w.getText().equalsIgnoreCase(readElement) || w.getText().matches(readElement.substring(1, readElement.length() - 1))) {
+									status = "Success";
+								}
+							}
+						}
+
+					}
+					else {
+						description = description.concat(" read element was blank. dont know how to compare.");
+						status = "Failed";
+					}
+
 				}
 				else {
 					userNameElement = driver.findElement(By.xpath(xpath));
@@ -141,7 +171,7 @@ public class RsiChromeTester {
 						}
 						else {
 							status = "Failed";
-							description.concat(" - No read element or value onthe page to inspect");
+							description = description.concat(" - No read element or value onthe page to inspect");
 						}
 					}
 					else {
@@ -150,7 +180,7 @@ public class RsiChromeTester {
 						}
 						else {
 							status = "Failed";
-							description.concat(" - No read element or value onthe page to inspect");
+							description = description.concat(" - No read element or value onthe page to inspect");
 						}
 					}
 
@@ -164,15 +194,15 @@ public class RsiChromeTester {
 		} catch (NoSuchElementException nse) {
 			nse.printStackTrace();
 			logger.error("Error no element found on the page " + nse.getMessage());
-			description.concat(" - " + nse.getMessage());
+			description = description.concat(" - " + nse.getMessage());
 			status = "Failure";
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Error other exception " + e.getMessage());
-			description.concat(" - " + e.getMessage());
+			description = description.concat(" - " + e.getMessage());
 			status = "Failure";
 		}
-
+		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		if(!status.equalsIgnoreCase("SUCCESS")){
 			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
 			takeScreenshot(conn, resultCaseId);
@@ -186,13 +216,13 @@ public class RsiChromeTester {
 		
 		return status;
 	}
-	//TODO Add Action URL param. to this method. That way upon successfull completiong of the action, we will be able to check if the action performed successfully.
+	//TODO Add Action URL param. to this method. That way upon successful completion of the action, we will be able to check if the action performed successfully.
 	public String actionPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement, String xpath, String action, String actionUrl, String baseURL, String need_screenshot, String initialDescription, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
 		String status = "Initial";
 		WebElement clickableElement = null;
 		String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		String endTime = "";
-		String description = initialDescription;
+ 		String description = initialDescription;
 
 		try {
 			String currentPageUrl = driver.getCurrentUrl();
@@ -219,23 +249,33 @@ public class RsiChromeTester {
 				// TODO new method checkStatus will decide whether or not action resulted in success or failure. params should be actionUrl, readElement. one of the to should be populated.
 				status = checkStatus(url, readElement, actionUrl);
 			}
-			else if(fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("radio") || fieldType.equalsIgnoreCase("checkbox") || fieldType.equalsIgnoreCase("button")) {
+			else if(fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("radio") || fieldType.equalsIgnoreCase("checkbox") || fieldType.equalsIgnoreCase("button") || fieldType.equalsIgnoreCase("div") || fieldType.equalsIgnoreCase("b") || fieldType.equalsIgnoreCase("h3")) {
 				if(com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName) || !com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)){
 					if(com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
 						status = "Failed";
-						description.concat(" - " + " No element id found on the test case.");
+						description = description.concat(" - " + " No element id found on the test case.");
 					}
 					else {
 						clickableElement = driver.findElement(By.xpath(xpath));
 					}
 				}
 				else {
-					clickableElement = driver.findElement(By.id(fieldName));
+					try {
+						clickableElement = driver.findElement(By.id(fieldName));
+					} catch (NoSuchElementException nse) {
+						// we will try one more time by checking all elements of the field type with getText() of fieldName.
+						List<WebElement> elements = driver.findElements(By.tagName(fieldType));
+						for (WebElement e : elements) {
+							if(e.getText().equalsIgnoreCase(fieldName)) {
+								clickableElement = e;
+							}
+						}
+					}
 				}
 
 			}
 			//NEXT Section should only be called if the status has not been populated as yet. Which in the case of anchor tag is already taken care of. (Sameer 01262020)
-			if(status.equalsIgnoreCase("initial")){
+			if(status.equalsIgnoreCase("initial") && clickableElement != null){
 				if(action.equalsIgnoreCase("Click") ) {
 					clickableElement.click();
 					if(!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl))
@@ -250,17 +290,20 @@ public class RsiChromeTester {
 					else
 						status = "Success";
 				}
+			} else {
+				if (status.equalsIgnoreCase("initial"))
+					status = "failed";
 			}
 
 		}catch (NoSuchElementException nse) {
 			nse.printStackTrace();
 			logger.error("Error no element found on the page " + nse.getMessage());
-			description.concat(" - " + nse.getMessage() + ".");
+			description = description.concat(" - " + nse.getMessage() + ".");
 			status = "Failure";
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Error other exception " + e.getMessage());
-			description.concat(" - " + e.getMessage() + ".");
+			description = description.concat(" - " + e.getMessage() + ".");
 			status = "Failure";
 		}
 		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
@@ -317,12 +360,12 @@ public class RsiChromeTester {
 		}catch (NoSuchElementException nse) {
 			nse.printStackTrace();
 			logger.error("Error no element found on the page " + nse.getMessage());
-			description.concat(" - " + nse.getMessage() + ".");
+			description = description.concat(" - " + nse.getMessage() + ".");
 			status = "Failure";
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Error other exception " + e.getMessage());
-			description.concat(" - " + e.getMessage() + ".");
+			description = description.concat(" - " + e.getMessage() + ".");
 			status = "Failure";
 		}
 		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();

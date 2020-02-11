@@ -118,7 +118,7 @@ public class RsiChromeTester {
 				if(xpath == null || xpath.trim().length() == 0){
 					//TODO now check to see if we can identify the element from readElement. (Sameer 02012020).
 					if(!com.rsi.utils.RsiTestingHelper.checkEmpty(readElement)) {
-						// Now try to identify the first occurence of fieldType for the readElement.
+						// Now try to identify the first occurrence of fieldType for the readElement.
 						if(fieldType.equalsIgnoreCase("h3")) {
 							List<WebElement> elements = driver.findElements(By.tagName("h3"));
 
@@ -131,6 +131,16 @@ public class RsiChromeTester {
 						}
 						else if(fieldType.equalsIgnoreCase("b")) {
 							List<WebElement> elements = driver.findElements(By.tagName("b"));
+
+							// now iterate through the list of elements and see if anyone has the content you are looking for.
+							for (WebElement w : elements) {
+								if (w.getText().equalsIgnoreCase(readElement) || w.getText().matches(readElement.substring(1, readElement.length() - 1))) {
+									status = "Success";
+								}
+							}
+						}
+						else if(fieldType.equalsIgnoreCase("label")) {
+							List<WebElement> elements = driver.findElements(By.tagName("label"));
 
 							// now iterate through the list of elements and see if anyone has the content you are looking for.
 							for (WebElement w : elements) {
@@ -155,7 +165,7 @@ public class RsiChromeTester {
 				userNameElement = driver.findElement(By.id(fieldName));
 			}
 
-			if(fieldType.equalsIgnoreCase("label") || fieldType.equalsIgnoreCase("text")) {
+			if(fieldType.equalsIgnoreCase("label") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("textarea")) {
 				valueOfElement = userNameElement.getAttribute("value");
 			} else if(fieldType.equalsIgnoreCase("th") || fieldType.equalsIgnoreCase("td")) {
 				valueOfElement = userNameElement.getText();
@@ -231,7 +241,12 @@ public class RsiChromeTester {
 
 			if (fieldType.equalsIgnoreCase("anchor")) {
 				if(!com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName)){
-					clickableElement = driver.findElement(By.linkText(fieldName));
+					try {
+						clickableElement = driver.findElement(By.linkText(fieldName));
+					} catch(NoSuchElementException nse) {
+						logger.info("Could not find a hyperlink with text " + fieldName + " now trying with By.id for the ssame key");
+						clickableElement = driver.findElement(By.id(fieldName));
+					}
 					clickableElement.sendKeys(Keys.ENTER);
 				}
 				else if (!com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
@@ -249,7 +264,10 @@ public class RsiChromeTester {
 				// TODO new method checkStatus will decide whether or not action resulted in success or failure. params should be actionUrl, readElement. one of the to should be populated.
 				status = checkStatus(url, readElement, actionUrl);
 			}
-			else if(fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("radio") || fieldType.equalsIgnoreCase("checkbox") || fieldType.equalsIgnoreCase("button") || fieldType.equalsIgnoreCase("div") || fieldType.equalsIgnoreCase("b") || fieldType.equalsIgnoreCase("h3")) {
+			else if(fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("radio")
+					|| fieldType.equalsIgnoreCase("checkbox") || fieldType.equalsIgnoreCase("button")
+					|| fieldType.equalsIgnoreCase("div") || fieldType.equalsIgnoreCase("b")
+					|| fieldType.equalsIgnoreCase("h3") || fieldType.equalsIgnoreCase("td")) {
 				if(com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName) || !com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)){
 					if(com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
 						status = "Failed";

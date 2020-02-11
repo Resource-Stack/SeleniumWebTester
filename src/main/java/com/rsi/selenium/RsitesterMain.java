@@ -1,5 +1,6 @@
 package com.rsi.selenium;
 
+import com.rsi.adapters.CommonHealthCore_Dev;
 import com.rsi.dataObject.H2OApplication;
 import com.rsi.selenium.factory.H2OTesterConnectionFactory;
 import org.apache.log4j.Logger;
@@ -68,7 +69,8 @@ public class RsitesterMain {
 						int currentTestCaseId = rsForTestCases.getInt("id");
 						int currentTestSequence = rsForTestCases.getInt("sequence");
 						logger.debug("Now running test case [ " + rsForTestCases.getString("id") + " ], for field name [ " + rsForTestCases.getString("field_name") +" ] and the sequence is [" + currentTestSequence + "]");
-						if (identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("action")) == "INSPECT") {
+						if (identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"),
+								rsForTestCases.getString("action")) == "INSPECT") {
 							try {
 								status = chromeTester.testPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("xpath"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
@@ -86,7 +88,8 @@ public class RsitesterMain {
 								continue;
 							}
 						}
-						else if (identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("action")) == "ACTION") {
+						else if (identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"),
+								rsForTestCases.getString("action")) == "ACTION") {
 							try {
 								status = chromeTester.actionPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("xpath"), rsForTestCases.getString("action"), rsForTestCases.getString("action_url"),rsForTestCases.getString("base_url"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
@@ -104,7 +107,8 @@ public class RsitesterMain {
 								continue;
 							}
 						}
-						else if(identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("action")) == "INPUT") {
+						else if(identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"),
+								rsForTestCases.getString("action")) == "INPUT") {
 							try{
 								status = chromeTester.inputPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("xpath"), rsForTestCases.getString("base_url"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
@@ -120,6 +124,18 @@ public class RsitesterMain {
 								ie.printStackTrace();
 								continue;
 							}
+						}
+						else if(identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"),
+								rsForTestCases.getString("action")) == "CUSTOM") {
+							// TODO now try to instantiate custom application code to execute backend methods that could not be performed from frontend. such as cleanup an object.
+							if(app.getName().equalsIgnoreCase("CommonHealthCore_Dev")){
+								// Now assume that a custom class has been implemented for this application.
+								logger.info("Now inside custom code.");
+								CommonHealthCore_Dev chcDev = new CommonHealthCore_Dev(app, conn);
+								status = "Success";
+								continue;
+							}
+
 						}
 						logger.debug("Status returned is [ " + status + " ]");
 						if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("new_tab"))) {
@@ -303,6 +319,9 @@ public class RsitesterMain {
 
 	private static String identifyTestCase(String fieldType, String inputValue,
 			String action) {
+		if(!com.rsi.utils.RsiTestingHelper.checkEmpty(fieldType) && fieldType.startsWith("[") && fieldType.endsWith("]")) {
+			return "CUSTOM";
+		}
 		if(!com.rsi.utils.RsiTestingHelper.checkEmpty(action)) {
 			return "ACTION";
 		}

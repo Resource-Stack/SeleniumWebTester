@@ -1,12 +1,17 @@
 package com.rsi.selenium;
 
 import com.rsi.adapters.CommonHealthCore_Dev;
+import com.rsi.dataObject.CustomCommand;
 import com.rsi.dataObject.H2OApplication;
 import com.rsi.selenium.factory.H2OTesterConnectionFactory;
 import org.apache.log4j.Logger;
+import org.apache.sling.commons.json.JSONException;
+import org.apache.sling.commons.json.JSONObject;
 import org.openqa.selenium.NoSuchElementException;
 
+import java.io.IOException;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class RsitesterMain {
@@ -128,12 +133,22 @@ public class RsitesterMain {
 						else if(identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"),
 								rsForTestCases.getString("action")) == "CUSTOM") {
 							// TODO now try to instantiate custom application code to execute backend methods that could not be performed from frontend. such as cleanup an object.
-							if(app.getName().equalsIgnoreCase("CommonHealthCore_Dev")){
-								// Now assume that a custom class has been implemented for this application.
-								logger.info("Now inside custom code.");
-								CommonHealthCore_Dev chcDev = new CommonHealthCore_Dev(app, conn);
-								status = "Success";
-								continue;
+							// Now assume that a custom class has been implemented for this application.
+							logger.info("Now inside custom code.");
+							String commandName = rsForTestCases.getString("field_name").substring(1, rsForTestCases.getString("field_name").length()-1);
+							//CommonHealthCore_Dev chcDev = new CommonHealthCore_Dev(app, conn);
+							for (CustomCommand command : app.getCustomCommands()) {
+								if(commandName.equalsIgnoreCase(command.getCustomCommandName())) {
+									logger.debug("Found the command to run " + command.toString());
+									try {
+										String all_params = "";
+										all_params = buildParamString(command.getParams(), rsForTestCases.getString("read_element"));
+										Process p = Runtime.getRuntime().exec("echo " + all_params + " | xargs " + command.getCustomCommand());
+										status = "Success";
+									} catch (IOException ioe) {
+										status = "Failure";
+									}
+								}
 							}
 
 						}
@@ -181,6 +196,31 @@ public class RsitesterMain {
 			chromeTester.getDriver().quit();
 		}
 	    
+	}
+
+	private static String buildParamString(String[] params, String read_element) {
+		ArrayList<String> outputParams = new ArrayList<String>();
+		JSONObject jsonObject = null;
+		try {
+			jsonObject = new JSONObject(read_element);
+			logger.debug("JSON Object retrieved is " + jsonObject.toString());
+			for (String param : params){
+				try {
+					outputParams.add((String)jsonObject.get(param));
+				}catch (NullPointerException npe) {
+					npe.printStackTrace();
+					logger.error("no record found " + npe.getMessage());
+				}
+
+			}
+		}catch (JSONException err){
+			logger.error( err.toString());
+			return "";
+		}
+		String csv = outputParams.toString().replace("[", "").replace("]", "")
+				.replace(", ", " ");
+		logger.debug("csv is [" + csv + "]");
+		return csv;
 	}
 
 	private static void updateSchedulerWithComplete(Connection conn,

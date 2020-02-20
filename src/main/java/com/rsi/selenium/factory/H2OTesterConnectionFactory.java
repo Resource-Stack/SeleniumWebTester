@@ -5,14 +5,14 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
 
+import com.rsi.dataObject.CustomCommand;
 import org.apache.log4j.Logger;
 
 import com.rsi.dataObject.H2OApplication;
+import org.apache.sling.commons.json.JSONException;
+import org.apache.sling.commons.json.JSONObject;
 
 public class H2OTesterConnectionFactory {
 	final static Logger logger = Logger.getLogger(H2OTesterConnectionFactory.class);
@@ -44,6 +44,7 @@ public class H2OTesterConnectionFactory {
 					app.setActionButton(rs.getString("action_button"));
 					app.setName(rs.getString("name"));
 					app.setAppId(rs.getInt("id"));
+					app.setCustomCommands(constructCustomApplication(conn, rs.getInt("id")));
 					logger.debug("Now ready to put a value in environments [ " + rs.getInt("id")+ " ], app is [ " + app.toString() + " ]");
 					if (environments == null) {
 						environments = new HashMap<Integer, H2OApplication>();
@@ -69,7 +70,27 @@ public class H2OTesterConnectionFactory {
 	    }
 		
 	}
-		
+
+	private ArrayList<CustomCommand> constructCustomApplication(Connection conn, int id) {
+		ArrayList<CustomCommand> commandsForEnvironment = new ArrayList<CustomCommand>();
+
+		try {
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery("SELECT  id, name, command, parameters FROM custom_commands where environment_id = " + id);
+			while (rs.next()) {
+				logger.debug("Found the record for a custom command " + rs.getInt("id"));
+				CustomCommand command = new CustomCommand(rs.getInt("id"), rs.getString("name"), rs.getString("command"), rs.getString("parameters").substring(1,rs.getString("parameters").length()-1).split(","));
+				logger.debug("Custom COmmand is " + command.toString() + " now adding it to the environment");
+				commandsForEnvironment.add(command);
+			}
+		}catch (SQLException sqle) {
+			// TODO add exception handler logic here.
+			sqle.printStackTrace();
+		}
+
+		return commandsForEnvironment;
+	}
+
 	/* Static 'instance' method */
 	public static H2OTesterConnectionFactory getInstance( ) {
 		if (factoryInstance == null) {
@@ -118,6 +139,7 @@ public class H2OTesterConnectionFactory {
 					app.setActionButton(rs.getString("action_button"));
 					app.setName(rs.getString("name"));
 					app.setAppId(rs.getInt("id"));
+					app.setCustomCommands(constructCustomApplication(conn, environmentId));
 					logger.debug("Now ready to put a value in environments [ " + rs.getInt("id")+ " ], app is [ " + app.toString() + " ]");
 					if (environments == null) {
 						environments = new HashMap<Integer, H2OApplication>();

@@ -1,5 +1,7 @@
 package com.rsi.dataObject;
 
+import java.util.ArrayList;
+
 public class H2OApplication {
 	private String url;
 	private String loginField;
@@ -9,6 +11,8 @@ public class H2OApplication {
 	private String loginPwd;
 	private String name;
 	private Integer appId;
+
+	private ArrayList<CustomCommand> customCommands;
 	
 	@Override
 	public String toString() {
@@ -62,6 +66,14 @@ public class H2OApplication {
 	}
 	public void setAppId(Integer appId) {
 		this.appId = appId;
+	}
+
+	public ArrayList<CustomCommand> getCustomCommands() {
+		return customCommands;
+	}
+
+	public void setCustomCommands(ArrayList<CustomCommand> customCommands) {
+		this.customCommands = customCommands;
 	}
 
 }

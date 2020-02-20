@@ -1,5 +1,6 @@
 package com.rsi.selenium;
 
+import com.rsi.utils.RsiTestingHelper;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.openqa.selenium.*;
@@ -236,8 +237,10 @@ public class RsiChromeTester {
 
 		try {
 			String currentPageUrl = driver.getCurrentUrl();
-			if (!currentPageUrl.equalsIgnoreCase(baseURL) && currentTestSequence == 1)
-				driver.get(baseURL);
+			if(!RsiTestingHelper.checkEmpty(baseURL)) {
+				if (!currentPageUrl.equalsIgnoreCase(baseURL) && currentTestSequence == 1)
+					driver.get(baseURL);
+			}
 
 			if (fieldType.equalsIgnoreCase("anchor")) {
 				if(!com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName)){

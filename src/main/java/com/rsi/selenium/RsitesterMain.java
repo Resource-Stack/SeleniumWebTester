@@ -9,7 +9,9 @@ import org.apache.sling.commons.json.JSONException;
 import org.apache.sling.commons.json.JSONObject;
 import org.openqa.selenium.NoSuchElementException;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -144,12 +146,33 @@ public class RsitesterMain {
 										String all_params = "";
 										all_params = buildParamString(command.getParams(), rsForTestCases.getString("read_element"));
 										Process p = Runtime.getRuntime().exec("echo " + all_params + " | xargs " + command.getCustomCommand());
-										status = "Success";
+										InputStreamReader isReader = new InputStreamReader(p.getErrorStream());
+										//Creating a BufferedReader object
+										BufferedReader reader = new BufferedReader(isReader);
+										StringBuffer sb = new StringBuffer();
+										String str;
+										while((str = reader.readLine())!= null){
+											sb.append(str);
+										}
+										if (com.rsi.utils.RsiTestingHelper.checkEmpty(sb.toString())) {
+											status = "Success";
+										}
+										else {
+											logger.error("Error in running the custom process [ " +  sb.toString() + " ]");
+											status = "Failure";
+										}
 									} catch (IOException ioe) {
 										status = "Failure";
 									}
+									catch(RuntimeException re) {
+										status = "Failure";
+										logger.error("re.getMessage()");
+									}
 								}
 							}
+
+							// TODO now log the test case with the status here. Since custom commands are independent of browsers.
+
 
 						}
 						logger.debug("Status returned is [ " + status + " ]");

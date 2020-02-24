@@ -117,7 +117,6 @@ public class RsiChromeTester {
 		try {
 			if ((fieldName == null || fieldName.trim().length() == 0) || (xpath != null && xpath.trim().length() > 0)) {
 				if(xpath == null || xpath.trim().length() == 0){
-					//TODO now check to see if we can identify the element from readElement. (Sameer 02012020).
 					if(!com.rsi.utils.RsiTestingHelper.checkEmpty(readElement)) {
 						// Now try to identify the first occurrence of fieldType for the readElement.
 						if(fieldType.equalsIgnoreCase("h3")) {
@@ -227,7 +226,6 @@ public class RsiChromeTester {
 		
 		return status;
 	}
-	//TODO Add Action URL param. to this method. That way upon successful completion of the action, we will be able to check if the action performed successfully.
 	public String actionPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String fieldType, String readElement, String xpath, String action, String actionUrl, String baseURL, String need_screenshot, String initialDescription, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
 		String status = "Initial";
 		WebElement clickableElement = null;
@@ -264,7 +262,6 @@ public class RsiChromeTester {
 
 				}
 
-				// TODO new method checkStatus will decide whether or not action resulted in success or failure. params should be actionUrl, readElement. one of the to should be populated.
 				status = checkStatus(url, readElement, actionUrl);
 			}
 			else if(fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("radio")
@@ -343,7 +340,6 @@ public class RsiChromeTester {
 	}
 
 	private String checkStatus(String url, String readElement, String actionUrl) {
-		// TODO if url is where the page is at or if readELement is true then return success.
 		if(!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl)){
 			if (actionUrl.equals(driver.getCurrentUrl())){
 				return "Success";
@@ -376,7 +372,6 @@ public class RsiChromeTester {
 			}
 
 			element.sendKeys(inputValue);
-			// TODO new method checkStatus will decide whether or not action resulted in success or failure. params should be actionUrl, readElement. one of the to should be populated.
 			status = checkStatus(url, fieldName, "");
 		}catch (NoSuchElementException nse) {
 			nse.printStackTrace();
@@ -414,7 +409,7 @@ public class RsiChromeTester {
             pstmt.setString(4,description);
 			pstmt.setString(5,startTime);
 			pstmt.setString(6, endTime);
-			if (pstmt.execute()) {
+			if (pstmt.executeUpdate() == 1) {
 				ResultSet rs = pstmt.getGeneratedKeys();
 
 				if (rs.next()) {
@@ -428,14 +423,12 @@ public class RsiChromeTester {
 			}
 
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			logger.error("Could not update the Test Case with Result for id [" + currentTestCaseId + " ] with Success Status. Please delete it manually. ");
 			e.printStackTrace();
 		} finally {
 			try {
 				pstmt.close();
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

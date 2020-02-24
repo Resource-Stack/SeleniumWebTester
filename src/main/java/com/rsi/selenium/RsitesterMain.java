@@ -85,12 +85,12 @@ public class RsitesterMain {
 								}
 							}catch (NoSuchElementException nse) {
 								logger.error(nse.getMessage());
-								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId);
+								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, com.rsi.utils.RsiTestingHelper.returmTimeStamp(), com.rsi.utils.RsiTestingHelper.returmTimeStamp());
 								//nse.printStackTrace();
 								continue;
 							}catch(InterruptedException ie) {
 								logger.error(ie.getMessage());
-								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId);
+								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, com.rsi.utils.RsiTestingHelper.returmTimeStamp(), com.rsi.utils.RsiTestingHelper.returmTimeStamp());
 								ie.printStackTrace();
 								continue;
 							}
@@ -104,12 +104,12 @@ public class RsitesterMain {
 								}
 							}catch (NoSuchElementException nse) {
 								logger.error(nse.getMessage());
-								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId);
+								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, com.rsi.utils.RsiTestingHelper.returmTimeStamp(), com.rsi.utils.RsiTestingHelper.returmTimeStamp());
 								//nse.printStackTrace();
 								continue;
 							}catch(InterruptedException ie) {
 								logger.error(ie.getMessage());
-								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId);
+								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, com.rsi.utils.RsiTestingHelper.returmTimeStamp(), com.rsi.utils.RsiTestingHelper.returmTimeStamp());
 								ie.printStackTrace();
 								continue;
 							}
@@ -123,17 +123,19 @@ public class RsitesterMain {
 								}
 							}catch(NoSuchElementException nse) {
 								logger.error("Error when handling Input type case... " + nse.getMessage());
-								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId);
+								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, com.rsi.utils.RsiTestingHelper.returmTimeStamp(), com.rsi.utils.RsiTestingHelper.returmTimeStamp());
 								continue;
 							}catch(InterruptedException ie) {
 								logger.error(ie.getMessage());
-								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId);
+								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, com.rsi.utils.RsiTestingHelper.returmTimeStamp(), com.rsi.utils.RsiTestingHelper.returmTimeStamp());
 								ie.printStackTrace();
 								continue;
 							}
 						}
 						else if(identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"),
 								rsForTestCases.getString("action")) == "CUSTOM") {
+							String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
+							String endTime = null;
 							// TODO now try to instantiate custom application code to execute backend methods that could not be performed from frontend. such as cleanup an object.
 							// Now assume that a custom class has been implemented for this application.
 							logger.info("Now inside custom code.");
@@ -145,21 +147,22 @@ public class RsitesterMain {
 									try {
 										String all_params = "";
 										all_params = buildParamString(command.getParams(), rsForTestCases.getString("read_element"));
-										Process p = Runtime.getRuntime().exec("echo " + all_params + " | xargs " + command.getCustomCommand());
-										InputStreamReader isReader = new InputStreamReader(p.getErrorStream());
+										Process p = Runtime.getRuntime().exec(command.getCustomCommand() + " " + all_params);
+										InputStreamReader ssReader = new InputStreamReader(p.getInputStream());
+										//InputStreamReader isReader = new InputStreamReader(p.getErrorStream());
 										//Creating a BufferedReader object
-										BufferedReader reader = new BufferedReader(isReader);
+										BufferedReader reader = new BufferedReader(ssReader);
 										StringBuffer sb = new StringBuffer();
 										String str;
 										while((str = reader.readLine())!= null){
 											sb.append(str);
 										}
 										if (com.rsi.utils.RsiTestingHelper.checkEmpty(sb.toString())) {
-											status = "Success";
+											status = "Failure";
 										}
 										else {
-											logger.error("Error in running the custom process [ " +  sb.toString() + " ]");
-											status = "Failure";
+											logger.info("Return from Custom Script [ " +  sb.toString() + " ]");
+											status = "Success";
 										}
 									} catch (IOException ioe) {
 										status = "Failure";
@@ -169,9 +172,14 @@ public class RsitesterMain {
 										logger.error("re.getMessage()");
 									}
 								}
+
+							}
+							if(status.equalsIgnoreCase("Failure")) {
+								updateTestCaseWithError(conn,currentTestCaseId,currentSchedulerId, startTime, endTime);
+							} else {
+								updateTestCaseWithSuccess(conn,currentTestCaseId,currentSchedulerId, startTime, endTime);
 							}
 
-							// TODO now log the test case with the status here. Since custom commands are independent of browsers.
 
 
 						}
@@ -260,14 +268,12 @@ public class RsitesterMain {
 			}
 				
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			logger.error("Could not update the Scheduler id [" + currentSchedulerId + " ] with Complete Status. Please delete it manually. ");
 			e.printStackTrace();
 		}finally {
 			try {
 				pstmt.close();
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -284,14 +290,12 @@ public class RsitesterMain {
 			}
 				
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			logger.error("Could not update the Scheduler id [" + currentSchedulerId + " ] with Error Status. Please delete it manually. ");
 			e.printStackTrace();
 		} finally {
 			try {
 				pstmt.close();
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -299,35 +303,72 @@ public class RsitesterMain {
 	}
 
 	private static void updateTestCaseWithError(Connection conn,
-			int currentTestCaseId, int currentSchedulerId) {
+			int currentTestCaseId, int currentSchedulerId, String startTime, String endTime) {
 		PreparedStatement pstmt = null;
 		try {
-			pstmt = conn.prepareStatement("UPDATE result_cases SET rd_id = 2 WHERE test_case_id = ?");
-			pstmt.setInt(1, currentTestCaseId);
-			if (pstmt.execute()) {
+			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, error_description, created_at, updated_at) VALUES (?, ?,?,?,?,?)");
+			pstmt.setInt(1, 2);
+			pstmt.setInt(2, currentTestCaseId);
+			pstmt.setInt(3, currentSchedulerId);
+			pstmt.setString(4, "Custom Command run successfully.");
+			pstmt.setString(5, startTime);
+			pstmt.setString(6, endTime);
+			pstmt.execute();
+			ResultSet rs = pstmt.getGeneratedKeys();
+			if (rs.next()) {
 				logger.info("Updated TestCase Result id [" + currentTestCaseId + " ], with Error");
 			}
 			else {
 				logger.error("Could not update the Test Case id in Results [" + currentTestCaseId + " ] with Error Status. Please delete it manually. ");
 			}
-				
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			logger.error("Could not update the Test Case with Result for id [" + currentTestCaseId + " ] with Error Status. Please delete it manually. ");
 			e.printStackTrace();
 		} finally {
 			try {
 				pstmt.close();
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		
 	}
 
+	private static void updateTestCaseWithSuccess(Connection conn,
+												int currentTestCaseId, int currentSchedulerId, String startTime, String endTime) {
+		PreparedStatement pstmt = null;
+
+		try {
+			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, error_description, created_at, updated_at) VALUES (?, ?,?,?,?,?)");
+			pstmt.setInt(1, 1);
+			pstmt.setInt(2, currentTestCaseId);
+			pstmt.setInt(3, currentSchedulerId);
+			pstmt.setString(4, "Custom Command run successfully.");
+			pstmt.setString(5, startTime);
+			pstmt.setString(6, endTime);
+			pstmt.execute();
+			ResultSet rs = pstmt.getGeneratedKeys();
+			if (rs.next()) {
+				logger.info("Updated TestCase Result id [" + currentTestCaseId + " ], with Error");
+			}
+			else {
+				logger.error("Could not update the Test Case id in Results [" + currentTestCaseId + " ] with Error Status. Please delete it manually. ");
+			}
+
+		} catch (SQLException e) {
+			logger.error("Could not update the Test Case with Result for id [" + currentTestCaseId + " ] with Error Status. Please delete it manually. ");
+			e.printStackTrace();
+		} finally {
+			try {
+				pstmt.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
 	private static void updateSchedulerWithError(Connection conn, int currentSchedulerId, int currentSuiteId, H2OApplication app) {
-		// TODO Update current Scheduler as Error. This will tell the analyzer that somethin bad happened.
 		PreparedStatement pstmt = null;
 		try {
 			pstmt = conn.prepareStatement("UPDATE schedulers SET status = 'Error' WHERE id = ?");

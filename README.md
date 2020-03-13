@@ -1,4 +1,5 @@
 # SeleniumWebTester
+A Database driven Testing tool for Wbe Based Applications
 
 #to compile
 mvn clean install

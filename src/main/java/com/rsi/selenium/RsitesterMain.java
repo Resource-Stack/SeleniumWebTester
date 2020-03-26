@@ -430,7 +430,7 @@ public class RsitesterMain {
 			return "ACTION";
 		}
 		//string - field_type ----- string2 - input_value ----------- string3 - action
-		if (fieldType.equalsIgnoreCase("anchor") || fieldType.equalsIgnoreCase("span")){
+		if (fieldType.equalsIgnoreCase("anchor") || fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("select") || fieldType.equalsIgnoreCase("option")){
 			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(action)) {
 				return "ACTION";
 			}

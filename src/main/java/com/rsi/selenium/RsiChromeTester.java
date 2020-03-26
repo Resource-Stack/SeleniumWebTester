@@ -74,9 +74,10 @@ public class RsiChromeTester {
 			Alert alert = driver.switchTo().alert();
 			alert.accept();
 
-			wait.until(ExpectedConditions.alertIsPresent());
-			alert = driver.switchTo().alert();
-			alert.accept();
+			// 03212020 Next lines commented since the second alert is no longer valid in the CHC login process.
+			//wait.until(ExpectedConditions.alertIsPresent());
+			//alert = driver.switchTo().alert();
+			//alert.accept();
 		}
 
 
@@ -267,7 +268,8 @@ public class RsiChromeTester {
 			else if(fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("radio")
 					|| fieldType.equalsIgnoreCase("checkbox") || fieldType.equalsIgnoreCase("button")
 					|| fieldType.equalsIgnoreCase("div") || fieldType.equalsIgnoreCase("b")
-					|| fieldType.equalsIgnoreCase("h3") || fieldType.equalsIgnoreCase("td")) {
+					|| fieldType.equalsIgnoreCase("h3") || fieldType.equalsIgnoreCase("td")
+					|| fieldType.equalsIgnoreCase("select") || fieldType.equalsIgnoreCase("option")) {
 				if(com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName) || !com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)){
 					if(com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
 						status = "Failed";
@@ -402,7 +404,7 @@ public class RsiChromeTester {
 		long newResultCaseId = -1;
 		PreparedStatement pstmt = null;
 		try {
-			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, error_description, created_at, updated_at) VALUES(?,?,?,?,STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'),STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'))");
+			pstmt = conn.prepareStatement("INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, error_description, created_at, updated_at) VALUES(?,?,?,?,STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'),STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'))", Statement.RETURN_GENERATED_KEYS);
 			pstmt.setInt(1, 1);
 			pstmt.setInt(2, currentTestCaseId);
 			pstmt.setInt(3, currentSchedulerId);

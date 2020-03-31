@@ -78,6 +78,7 @@ public class RsitesterMain {
 						logger.debug("Now running test case [ " + rsForTestCases.getString("id") + " ], for field name [ " + rsForTestCases.getString("field_name") +" ] and the sequence is [" + currentTestSequence + "]");
 						if (identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"),
 								rsForTestCases.getString("action")) == "INSPECT") {
+								logger.debug("testcaseId " + currentTestCaseId + " identified as INSPECT");
 							try {
 								status = chromeTester.testPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("xpath"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
@@ -97,6 +98,7 @@ public class RsitesterMain {
 						}
 						else if (identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"),
 								rsForTestCases.getString("action")) == "ACTION") {
+							logger.debug("testcaseId " + currentTestCaseId + " identified as ACTION");
 							try {
 								status = chromeTester.actionPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("xpath"), rsForTestCases.getString("action"), rsForTestCases.getString("action_url"),rsForTestCases.getString("base_url"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
@@ -116,6 +118,7 @@ public class RsitesterMain {
 						}
 						else if(identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"),
 								rsForTestCases.getString("action")) == "INPUT") {
+							logger.debug("testcaseId " + currentTestCaseId + " identified as INPUT");
 							try{
 								status = chromeTester.inputPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("xpath"), rsForTestCases.getString("base_url"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
@@ -134,6 +137,7 @@ public class RsitesterMain {
 						}
 						else if(identifyTestCase(rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"),
 								rsForTestCases.getString("action")) == "CUSTOM") {
+							logger.debug("testcaseId " + currentTestCaseId + " identified as CUSTOM");
 							String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 							String endTime = null;
 							// TODO now try to instantiate custom application code to execute backend methods that could not be performed from frontend. such as cleanup an object.
@@ -430,7 +434,7 @@ public class RsitesterMain {
 			return "ACTION";
 		}
 		//string - field_type ----- string2 - input_value ----------- string3 - action
-		if (fieldType.equalsIgnoreCase("anchor") || fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("select") || fieldType.equalsIgnoreCase("option")){
+		if (fieldType.equalsIgnoreCase("anchor") || fieldType.equalsIgnoreCase("a") || fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("select") || fieldType.equalsIgnoreCase("option")){
 			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(action)) {
 				return "ACTION";
 			}
@@ -458,7 +462,7 @@ public class RsitesterMain {
 			}
 
 		}
-		else if (fieldType.equalsIgnoreCase("text")){
+		else if (fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("textarea")){
 			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(inputValue)){
 				return "INPUT";
 			}

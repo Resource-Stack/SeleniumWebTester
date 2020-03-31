@@ -25,9 +25,9 @@ public class RsiChromeTester {
 
 	public RsiChromeTester() {
 		System.setProperty("webdriver.chrome.driver", "C:\\java_libs\\chromedriver.exe");
-		options.addArguments("--headless");
-
-		driver = new ChromeDriver();
+		//options.addArguments("--headless");
+		options.addArguments("--start-maximized");
+		driver = new ChromeDriver(options);
 
 		
 	}
@@ -241,7 +241,7 @@ public class RsiChromeTester {
 					driver.get(baseURL);
 			}
 
-			if (fieldType.equalsIgnoreCase("anchor")) {
+			if (fieldType.equalsIgnoreCase("anchor") || fieldType.equalsIgnoreCase("a")) {
 				if(!com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName)){
 					try {
 						clickableElement = driver.findElement(By.linkText(fieldName));
@@ -269,7 +269,8 @@ public class RsiChromeTester {
 					|| fieldType.equalsIgnoreCase("checkbox") || fieldType.equalsIgnoreCase("button")
 					|| fieldType.equalsIgnoreCase("div") || fieldType.equalsIgnoreCase("b")
 					|| fieldType.equalsIgnoreCase("h3") || fieldType.equalsIgnoreCase("td")
-					|| fieldType.equalsIgnoreCase("select") || fieldType.equalsIgnoreCase("option")) {
+					|| fieldType.equalsIgnoreCase("select") || fieldType.equalsIgnoreCase("option")
+					|| fieldType.equalsIgnoreCase("figure")) {
 				if(com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName) || !com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)){
 					if(com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
 						status = "Failed";
@@ -372,7 +373,7 @@ public class RsiChromeTester {
 			else {
 				element = driver.findElement(By.id(fieldName));
 			}
-
+			element.clear();
 			element.sendKeys(inputValue);
 			status = checkStatus(url, fieldName, "");
 		}catch (NoSuchElementException nse) {

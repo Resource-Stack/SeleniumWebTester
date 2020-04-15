@@ -220,7 +220,7 @@ public class RsiChromeTester {
 		}
 		else {
 			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
-			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
+			if(!need_screenshot.equalsIgnoreCase("0")) {
 				takeScreenshot(conn, resultCaseId);
 			}
 		}
@@ -270,7 +270,7 @@ public class RsiChromeTester {
 					|| fieldType.equalsIgnoreCase("div") || fieldType.equalsIgnoreCase("b")
 					|| fieldType.equalsIgnoreCase("h3") || fieldType.equalsIgnoreCase("td")
 					|| fieldType.equalsIgnoreCase("select") || fieldType.equalsIgnoreCase("option")
-					|| fieldType.equalsIgnoreCase("figure")) {
+					|| fieldType.equalsIgnoreCase("figure")	|| fieldType.equalsIgnoreCase("submit")) {
 				if(com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName) || !com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)){
 					if(com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
 						status = "Failed";
@@ -334,7 +334,7 @@ public class RsiChromeTester {
 		}
 		else {
 			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
-			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
+			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot) && !need_screenshot.equalsIgnoreCase("0")) {
 				takeScreenshot(conn, resultCaseId);
 			}
 		}
@@ -349,7 +349,14 @@ public class RsiChromeTester {
 			}
 			else {
 				logger.debug("In check status method returning false since actionUrl [" + actionUrl + "] is not the same as the url [" + driver.getCurrentUrl() + "]");
-				return "Failed";
+				// Maybe it is because the new page has opened on a new tab. Switch tab and see if the currentUrl in that tab is the same as actionUrl
+				switchToNewTab();
+				if (actionUrl.equals(driver.getCurrentUrl())){
+					return "Success";
+				}
+				else {
+					return "Failed";
+				}
 			}
 		}
 
@@ -394,7 +401,7 @@ public class RsiChromeTester {
 		}
 		else {
 			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
-			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
+			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot) && !need_screenshot.equalsIgnoreCase("0")) {
 				takeScreenshot(conn, resultCaseId);
 			}
 		}
@@ -445,7 +452,7 @@ public class RsiChromeTester {
 		try
 		{ TakesScreenshot ts=(TakesScreenshot)driver;
 
-			File source=ts. getScreenshotAs(OutputType. FILE);
+			File source= ((TakesScreenshot)driver). getScreenshotAs(OutputType. FILE);
 			FileUtils. copyFile(source, new File("./Screenshots/"+ fileName));
 			logger.info("Screenshot taken");
 			// Now save the file name to the database.

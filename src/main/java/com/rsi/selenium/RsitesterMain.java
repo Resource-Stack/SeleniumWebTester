@@ -183,12 +183,9 @@ public class RsitesterMain {
 							} else {
 								updateTestCaseWithSuccess(conn,currentTestCaseId,currentSchedulerId, startTime, endTime);
 							}
-
-
-
 						}
 						logger.debug("Status returned is [ " + status + " ]");
-						if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("new_tab"))) {
+						if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("new_tab")) && rsForTestCases.getString("new_tab").equalsIgnoreCase("1")) {
 							chromeTester.switchToNewTab();
 							try {
 								TimeUnit.SECONDS.sleep(15);

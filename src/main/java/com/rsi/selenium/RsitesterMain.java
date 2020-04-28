@@ -1,9 +1,9 @@
 package com.rsi.selenium;
 
-import com.rsi.adapters.CommonHealthCore_Dev;
 import com.rsi.dataObject.CustomCommand;
 import com.rsi.dataObject.H2OApplication;
 import com.rsi.selenium.factory.H2OTesterConnectionFactory;
+import com.rsi.utils.EmailManagementUtility;
 import org.apache.log4j.Logger;
 import org.apache.sling.commons.json.JSONException;
 import org.apache.sling.commons.json.JSONObject;
@@ -152,21 +152,25 @@ public class RsitesterMain {
 										String all_params = "";
 										all_params = buildParamString(command.getParams(), rsForTestCases.getString("read_element"));
 										Process p = Runtime.getRuntime().exec(command.getCustomCommand() + " " + all_params);
-										InputStreamReader ssReader = new InputStreamReader(p.getInputStream());
-										//InputStreamReader isReader = new InputStreamReader(p.getErrorStream());
-										//Creating a BufferedReader object
-										BufferedReader reader = new BufferedReader(ssReader);
-										StringBuffer sb = new StringBuffer();
-										String str;
-										while((str = reader.readLine())!= null){
-											sb.append(str);
-										}
-										if (com.rsi.utils.RsiTestingHelper.checkEmpty(sb.toString())) {
-											status = "Failure";
-										}
-										else {
-											logger.info("Return from Custom Script [ " +  sb.toString() + " ]");
-											status = "Success";
+										if (!p.waitFor(1, TimeUnit.MINUTES)) {
+											InputStreamReader ssReader = new InputStreamReader(p.getInputStream());
+											//InputStreamReader isReader = new InputStreamReader(p.getErrorStream());
+											//Creating a BufferedReader object
+											BufferedReader reader = new BufferedReader(ssReader);
+											StringBuffer sb = new StringBuffer();
+											String str;
+											while((str = reader.readLine())!= null){
+												sb.append(str);
+											}
+											if (com.rsi.utils.RsiTestingHelper.checkEmpty(sb.toString())) {
+												status = "Failure";
+											}
+											else {
+												logger.info("Return from Custom Script [ " +  sb.toString() + " ]");
+												status = "Success";
+											}
+										}else {
+											p.destroy(); // consider using destroyForcibly instead
 										}
 									} catch (IOException ioe) {
 										status = "Failure";
@@ -174,6 +178,9 @@ public class RsitesterMain {
 									catch(RuntimeException re) {
 										status = "Failure";
 										logger.error("re.getMessage()");
+									} catch (InterruptedException ine) {
+										status = "Failure";
+										logger.error("ine.getMessage()");
 									}
 								}
 
@@ -196,14 +203,14 @@ public class RsitesterMain {
 
 					}
 				}
-				//updateTestSuiteResultWithComplete(conn, );
 				if(status.equalsIgnoreCase("SUCCESS")) {
 					updateSchedulerWithComplete(conn, currentSchedulerId, currentSuiteId);
 				}
 				else {
 					updateSchedulerWithError(conn, currentSchedulerId, currentSuiteId, app);
 				}
-				
+				// send out an email to the recipient of this environment.
+				EmailManagementUtility.sendEmail(app, currentSchedulerId, conn);
 			}
 		} catch (SQLException e) {
 			logger.error("Looks like Something bad happened while running the query, most likely referential data does not exist. ");
@@ -267,7 +274,6 @@ public class RsitesterMain {
 			else {
 				logger.error("Could not update the Scheduler id [" + currentSchedulerId + " ] with Complete Status. Please delete it manually. ");
 			}
-				
 		} catch (SQLException e) {
 			logger.error("Could not update the Scheduler id [" + currentSchedulerId + " ] with Complete Status. Please delete it manually. ");
 			e.printStackTrace();

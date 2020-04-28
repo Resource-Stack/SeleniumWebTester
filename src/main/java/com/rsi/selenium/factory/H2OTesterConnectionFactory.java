@@ -1,18 +1,11 @@
 package com.rsi.selenium.factory;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.*;
-
 import com.rsi.dataObject.CustomCommand;
+import com.rsi.dataObject.H2OApplication;
 import org.apache.log4j.Logger;
 
-import com.rsi.dataObject.H2OApplication;
-import org.apache.sling.commons.json.JSONException;
-import org.apache.sling.commons.json.JSONObject;
+import java.sql.*;
+import java.util.*;
 
 public class H2OTesterConnectionFactory {
 	final static Logger logger = Logger.getLogger(H2OTesterConnectionFactory.class);
@@ -32,7 +25,7 @@ public class H2OTesterConnectionFactory {
 			Connection conn = getDatabaseConnection();
 			try {
 				Statement stmt = conn.createStatement();
-				ResultSet rs = stmt.executeQuery("SELECT id, url, username, password, login_field, password_field,name, action_button FROM environments");
+				ResultSet rs = stmt.executeQuery("SELECT id, url, username, password, login_field, password_field,name, action_button, user_emails FROM environments");
 				while (rs.next()) {
 					logger.debug("Resultset login field is " + rs.getString("login_field") + " rs id is ");
 					H2OApplication app = new H2OApplication();
@@ -44,6 +37,7 @@ public class H2OTesterConnectionFactory {
 					app.setActionButton(rs.getString("action_button"));
 					app.setName(rs.getString("name"));
 					app.setAppId(rs.getInt("id"));
+					app.setUserEmails(rs.getString("user_emails"));
 					app.setCustomCommands(constructCustomApplication(conn, rs.getInt("id")));
 					logger.debug("Now ready to put a value in environments [ " + rs.getInt("id")+ " ], app is [ " + app.toString() + " ]");
 					if (environments == null) {

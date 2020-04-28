@@ -11,6 +11,7 @@ public class H2OApplication {
 	private String loginPwd;
 	private String name;
 	private Integer appId;
+	private String[] userEmails;
 
 	private ArrayList<CustomCommand> customCommands;
 	
@@ -76,4 +77,11 @@ public class H2OApplication {
 		this.customCommands = customCommands;
 	}
 
+	public void setUserEmails(String user_emails) {
+		userEmails = user_emails.split(",");
+	}
+
+	public String[] getUserEmails() {
+		return userEmails;
+	}
 }

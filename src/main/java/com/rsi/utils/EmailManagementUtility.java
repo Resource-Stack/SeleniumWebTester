@@ -49,7 +49,13 @@ public class EmailManagementUtility {
 
 
             // Set To: header field of the header.
-            message.addRecipient(Message.RecipientType.TO, new InternetAddress("sameerrsi@gmail.com"));
+            //InternetAddress[] addresses = InternetAddress.parse(toEmail);
+            if (app.getUserEmails().length > 0) {
+                message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(String.join(",",app.getUserEmails())));
+            } else {
+                message.addRecipient(Message.RecipientType.TO, new InternetAddress("sameer.sharma@resourcestack.com"));
+            }
+
 
             String suiteName = getSchedulerSuiteName(conn, currentSchedulerId);
             Timestamp timestamp = new Timestamp(System.currentTimeMillis());

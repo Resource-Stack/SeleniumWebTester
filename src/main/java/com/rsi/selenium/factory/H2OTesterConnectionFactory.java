@@ -122,7 +122,7 @@ public class H2OTesterConnectionFactory {
 		if (environments.isEmpty()) {
 			try {
 				Statement stmt = conn.createStatement();
-				ResultSet rs = stmt.executeQuery("SELECT id, url, username, password, login_field, password_field,name, action_button FROM environments");
+				ResultSet rs = stmt.executeQuery("SELECT id, url, username, password, login_field, password_field,name, action_button, user_emails FROM environments");
 				while (rs.next()) {
 					H2OApplication app = new H2OApplication();
 					app.setUrl(rs.getString("url"));
@@ -133,6 +133,7 @@ public class H2OTesterConnectionFactory {
 					app.setActionButton(rs.getString("action_button"));
 					app.setName(rs.getString("name"));
 					app.setAppId(rs.getInt("id"));
+					app.setUserEmails(rs.getString("user_emails"));
 					app.setCustomCommands(constructCustomApplication(conn, environmentId));
 					logger.debug("Now ready to put a value in environments [ " + rs.getInt("id")+ " ], app is [ " + app.toString() + " ]");
 					if (environments == null) {

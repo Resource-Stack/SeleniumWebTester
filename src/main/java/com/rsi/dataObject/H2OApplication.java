@@ -78,7 +78,10 @@ public class H2OApplication {
 	}
 
 	public void setUserEmails(String user_emails) {
-		userEmails = user_emails.split(",");
+		if(user_emails != null)
+			userEmails = user_emails.split(",");
+		else
+			userEmails = new String[]{"technicalsupport@resourcestack.com"};
 	}
 
 	public String[] getUserEmails() {

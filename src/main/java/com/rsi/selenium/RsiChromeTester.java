@@ -506,7 +506,7 @@ public class RsiChromeTester {
 	public boolean switchToNewTab() {
 		ArrayList<String> tabs = new ArrayList<String> (driver.getWindowHandles());
 		logger.debug("number of tabs are " + tabs.size());
-		driver.switchTo().window(tabs.get(1));
+		driver.switchTo().window(tabs.get(tabs.size()-1));
 
 		return true;
 	}

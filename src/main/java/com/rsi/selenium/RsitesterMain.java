@@ -465,7 +465,7 @@ public class RsitesterMain {
 			}
 
 		}
-		else if (fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("textarea")){
+		else if (fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("textarea") || fieldType.equalsIgnoreCase("search")){
 			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(inputValue)){
 				return "INPUT";
 			}

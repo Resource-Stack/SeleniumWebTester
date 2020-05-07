@@ -168,7 +168,7 @@ public class RsiChromeTester {
 
 			if(fieldType.equalsIgnoreCase("label") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("textarea")) {
 				valueOfElement = userNameElement.getAttribute("value");
-			} else if(fieldType.equalsIgnoreCase("th") || fieldType.equalsIgnoreCase("td")) {
+			} else if(fieldType.equalsIgnoreCase("th") || fieldType.equalsIgnoreCase("td")  || fieldType.equalsIgnoreCase("li")  || fieldType.equalsIgnoreCase("p")) {
 				valueOfElement = userNameElement.getText();
 			}
 

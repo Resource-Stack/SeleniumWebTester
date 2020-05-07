@@ -433,19 +433,23 @@ public class RsitesterMain {
 		if(!com.rsi.utils.RsiTestingHelper.checkEmpty(fieldType) && fieldType.startsWith("[") && fieldType.endsWith("]")) {
 			return "CUSTOM";
 		}
-		if(!com.rsi.utils.RsiTestingHelper.checkEmpty(action)) {
+		if(!com.rsi.utils.RsiTestingHelper.checkEmpty(action) && !action.equalsIgnoreCase("read")) {
 			return "ACTION";
 		}
+		if(!com.rsi.utils.RsiTestingHelper.checkEmpty(action) && action.equalsIgnoreCase("read")) {
+			return "INSPECT";
+		}
+
 		//string - field_type ----- string2 - input_value ----------- string3 - action
 		if (fieldType.equalsIgnoreCase("anchor") || fieldType.equalsIgnoreCase("a") || fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("select") || fieldType.equalsIgnoreCase("option")){
-			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(action)) {
+			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(action) || !action.equalsIgnoreCase("Read")) {
 				return "ACTION";
 			}
 			else {
 				return "INSPECT";
 			}
 		}
-		else if (fieldType.equalsIgnoreCase("label")){
+		else if (fieldType.equalsIgnoreCase("label") || action.equalsIgnoreCase("Read")){
 			return "INSPECT";
 		}
 		else if(fieldType.equalsIgnoreCase("checkbox") || fieldType.equalsIgnoreCase("radio")) {

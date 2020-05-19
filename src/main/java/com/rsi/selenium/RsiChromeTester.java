@@ -51,10 +51,18 @@ public class RsiChromeTester {
 				e.printStackTrace();
 			}
 		}
-
-        WebElement userNameElement = driver.findElement(By.id(userNameField));
-		WebElement passwordElement = driver.findElement(By.id(passwordField));
-
+		WebElement userNameElement;
+		WebElement passwordElement;
+		try {
+			userNameElement = driver.findElement(By.id(userNameField));
+		} catch(NoSuchElementException nse) {
+			userNameElement = driver.findElement(By.name(userNameField));
+		}
+		try {
+			passwordElement = driver.findElement(By.id(passwordField));
+		} catch (NoSuchElementException nse) {
+			passwordElement = driver.findElement(By.name(passwordField));
+		}
 		userNameElement.sendKeys(userName);
 		passwordElement.sendKeys(password);
 		

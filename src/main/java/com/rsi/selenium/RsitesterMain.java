@@ -82,7 +82,13 @@ public class RsitesterMain {
 							try {
 								status = chromeTester.testPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("xpath"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
-									TimeUnit.SECONDS.sleep(15);
+									try {
+										int iSleepTimeInSecs = Integer.parseInt(rsForTestCases.getString("sleeps"));
+										TimeUnit.SECONDS.sleep(iSleepTimeInSecs);
+									} catch (NumberFormatException nfe) {
+										logger.debug("Could not convert the sleep time to a number sleep time set was [ " + rsForTestCases.getString("sleeps") + " ]");
+										TimeUnit.SECONDS.sleep(15);
+									}
 								}
 							}catch (NoSuchElementException nse) {
 								logger.error(nse.getMessage());
@@ -443,13 +449,18 @@ public class RsitesterMain {
 		//string - field_type ----- string2 - input_value ----------- string3 - action
 		if (fieldType.equalsIgnoreCase("anchor") || fieldType.equalsIgnoreCase("a") || fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("select") || fieldType.equalsIgnoreCase("option")){
 			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(action) || !action.equalsIgnoreCase("Read")) {
-				return "ACTION";
+				if(com.rsi.utils.RsiTestingHelper.checkEmpty(action) && !com.rsi.utils.RsiTestingHelper.checkEmpty(inputValue)) {
+					return "INPUT";
+				}
+				else {
+					return "ACTION";
+				}
 			}
 			else {
 				return "INSPECT";
 			}
 		}
-		else if (fieldType.equalsIgnoreCase("label") || action.equalsIgnoreCase("Read")){
+		else if (com.rsi.utils.RsiTestingHelper.checkEmpty(action) && fieldType.equalsIgnoreCase("label")){
 			return "INSPECT";
 		}
 		else if(fieldType.equalsIgnoreCase("checkbox") || fieldType.equalsIgnoreCase("radio")) {

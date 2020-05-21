@@ -167,7 +167,7 @@ public class RsiChromeTester {
 
 				}
 				else {
-					userNameElement = driver.findElement(By.xpath(xpath));
+					userNameElement = fetchWebElement("INSPECT", fieldName, xpath);
 				}
 			}
 			else {
@@ -176,7 +176,7 @@ public class RsiChromeTester {
 
 			if(fieldType.equalsIgnoreCase("label") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("textarea")) {
 				valueOfElement = userNameElement.getAttribute("value");
-			} else if(fieldType.equalsIgnoreCase("th") || fieldType.equalsIgnoreCase("td")  || fieldType.equalsIgnoreCase("li")  || fieldType.equalsIgnoreCase("p")) {
+			} else if(fieldType.equalsIgnoreCase("th") || fieldType.equalsIgnoreCase("td")  || fieldType.equalsIgnoreCase("li")  || fieldType.equalsIgnoreCase("p") || fieldType.equalsIgnoreCase("div")) {
 				valueOfElement = userNameElement.getText();
 			}
 
@@ -220,6 +220,8 @@ public class RsiChromeTester {
 			logger.error("Error other exception " + e.getMessage());
 			description = description.concat(" - " + e.getMessage());
 			status = "Failure";
+		} finally {
+			driver.switchTo().defaultContent();
 		}
 		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		if(!status.equalsIgnoreCase("SUCCESS")){
@@ -228,8 +230,10 @@ public class RsiChromeTester {
 		}
 		else {
 			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
-			if(!need_screenshot.equalsIgnoreCase("0")) {
-				takeScreenshot(conn, resultCaseId);
+			if(!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
+				if(!need_screenshot.equalsIgnoreCase("0")) {
+					takeScreenshot(conn, resultCaseId);
+				}
 			}
 		}
 		
@@ -249,61 +253,18 @@ public class RsiChromeTester {
 					driver.get(baseURL);
 			}
 
-			if (fieldType.equalsIgnoreCase("anchor") || fieldType.equalsIgnoreCase("a")) {
-				if(!com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName)){
-					try {
-						clickableElement = driver.findElement(By.linkText(fieldName));
-					} catch(NoSuchElementException nse) {
-						logger.info("Could not find a hyperlink with text " + fieldName + " now trying with By.id for the ssame key");
-						clickableElement = driver.findElement(By.id(fieldName));
+			try {
+				clickableElement = fetchWebElement("ACTION", fieldName, xpath);
+			} catch (NoSuchElementException nse) {
+				// we will try one more time by checking all elements of the field type with getText() of fieldName.
+				List<WebElement> elements = driver.findElements(By.tagName(fieldType));
+				for (WebElement e : elements) {
+					if(e.getText().equalsIgnoreCase(fieldName)) {
+						clickableElement = e;
 					}
-					clickableElement.sendKeys(Keys.ENTER);
 				}
-				else if (!com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
-					if(action.equalsIgnoreCase("click")) {
-						clickableElement = driver.findElement(By.xpath(xpath));
-						clickableElement.click();
-					}
-					else{
-						clickableElement = driver.findElement(By.xpath(xpath));
-						clickableElement.sendKeys(Keys.ENTER);
-					}
-
-				}
-
-				status = checkStatus(url, readElement, actionUrl);
 			}
-			else if(fieldType.equalsIgnoreCase("span") || fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("radio")
-					|| fieldType.equalsIgnoreCase("checkbox") || fieldType.equalsIgnoreCase("button")
-					|| fieldType.equalsIgnoreCase("div") || fieldType.equalsIgnoreCase("b")
-					|| fieldType.equalsIgnoreCase("h3") || fieldType.equalsIgnoreCase("td")
-					|| fieldType.equalsIgnoreCase("select") || fieldType.equalsIgnoreCase("option")
-					|| fieldType.equalsIgnoreCase("figure")	|| fieldType.equalsIgnoreCase("submit")) {
-				if(com.rsi.utils.RsiTestingHelper.checkEmpty(fieldName) || !com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)){
-					if(com.rsi.utils.RsiTestingHelper.checkEmpty(xpath)) {
-						status = "Failed";
-						description = description.concat(" - " + " No element id found on the test case.");
-					}
-					else {
-						clickableElement = driver.findElement(By.xpath(xpath));
-					}
-				}
-				else {
-					try {
-						clickableElement = driver.findElement(By.id(fieldName));
-					} catch (NoSuchElementException nse) {
-						// we will try one more time by checking all elements of the field type with getText() of fieldName.
-						List<WebElement> elements = driver.findElements(By.tagName(fieldType));
-						for (WebElement e : elements) {
-							if(e.getText().equalsIgnoreCase(fieldName)) {
-								clickableElement = e;
-							}
-						}
-					}
-				}
-
-			}
-			//NEXT Section should only be called if the status has not been populated as yet. Which in the case of anchor tag is already taken care of. (Sameer 01262020)
+		    //NEXT Section should only be called if the status has not been populated as yet. Which in the case of anchor tag is already taken care of. (Sameer 01262020)
 			if(status.equalsIgnoreCase("initial") && clickableElement != null){
 				if(action.equalsIgnoreCase("Click") ) {
 					clickableElement.click();
@@ -334,6 +295,8 @@ public class RsiChromeTester {
 			logger.error("Error other exception " + e.getMessage());
 			description = description.concat(" - " + e.getMessage() + ".");
 			status = "Failure";
+		} finally {
+			driver.switchTo().defaultContent();
 		}
 		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		if(!status.equalsIgnoreCase("SUCCESS")){
@@ -382,13 +345,10 @@ public class RsiChromeTester {
 			if (!currentPageUrl.equalsIgnoreCase(base_url) && currentTestSequence == 1)
 				driver.get(base_url);
 
-			if((fieldName == null || fieldName.trim().length() == 0) || (xpath != null && xpath.trim().length() > 0)) {
-				element = driver.findElement(By.xpath(xpath));
-			}
-			else {
-				element = driver.findElement(By.id(fieldName));
-			}
-			element.clear();
+			element = fetchWebElement("INPUT", fieldName, xpath);
+
+			// TODO this is failing for select.
+			//element.clear();
 			element.sendKeys(inputValue);
 			status = checkStatus(url, fieldName, "");
 		}catch (NoSuchElementException nse) {
@@ -402,6 +362,11 @@ public class RsiChromeTester {
 			description = description.concat(" - " + e.getMessage() + ".");
 			status = "Failure";
 		}
+		finally {
+			// TODO if switched to a iframe switch back to the main window.
+			driver.switchTo().defaultContent();
+
+		}
 		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		if(!status.equalsIgnoreCase("SUCCESS")){
 			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime, description);
@@ -414,6 +379,39 @@ public class RsiChromeTester {
 			}
 		}
 		return status;
+	}
+
+	private WebElement fetchWebElement(String fieldCategory, String fieldName, String xpath) throws NoSuchElementException, InterruptedException {
+		WebElement element = null;
+		String[] xpathColl = null;
+
+		if(hasSwitch(xpath)) {
+			xpathColl = xpath.split("<switch>");
+			//TimeUnit.SECONDS.sleep(2);
+			driver.switchTo().frame(driver.findElement(By.xpath(xpathColl[0])));
+		}
+		if((fieldName == null || fieldName.trim().length() == 0)) {
+			if(hasSwitch(xpath)) {
+				element = driver.findElement(By.xpath(xpathColl[1]));
+			}
+			else {
+				element = driver.findElement(By.xpath(xpath));
+			}
+		}
+		else {
+			element = driver.findElement(By.id(fieldName));
+		}
+		return element;
+	}
+
+	private boolean hasSwitch(String xpath) {
+		boolean bRetval = false;
+		if(xpath != null) {
+			if(xpath.contains("<switch>")) {
+				bRetval = true;
+			}
+		}
+		return bRetval;
 	}
 
 	private long updateTestCaseWithSuccess(Connection conn, int currentTestCaseId, int currentSchedulerId, String startTime, String endTime, String description) {

@@ -81,15 +81,7 @@ public class RsitesterMain {
 								logger.debug("testcaseId " + currentTestCaseId + " identified as INSPECT");
 							try {
 								status = chromeTester.testPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("xpath"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
-								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
-									try {
-										int iSleepTimeInSecs = Integer.parseInt(rsForTestCases.getString("sleeps"));
-										TimeUnit.SECONDS.sleep(iSleepTimeInSecs);
-									} catch (NumberFormatException nfe) {
-										logger.debug("Could not convert the sleep time to a number sleep time set was [ " + rsForTestCases.getString("sleeps") + " ]");
-										TimeUnit.SECONDS.sleep(15);
-									}
-								}
+								sleepIfInstructedTo(rsForTestCases.getString("sleeps"));
 							}catch (NoSuchElementException nse) {
 								logger.error(nse.getMessage());
 								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, com.rsi.utils.RsiTestingHelper.returmTimeStamp(), com.rsi.utils.RsiTestingHelper.returmTimeStamp());
@@ -107,9 +99,7 @@ public class RsitesterMain {
 							logger.debug("testcaseId " + currentTestCaseId + " identified as ACTION");
 							try {
 								status = chromeTester.actionPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("read_element"), rsForTestCases.getString("xpath"), rsForTestCases.getString("action"), rsForTestCases.getString("action_url"),rsForTestCases.getString("base_url"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
-								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
-									TimeUnit.SECONDS.sleep(15);
-								}
+								sleepIfInstructedTo(rsForTestCases.getString("sleeps"));
 							}catch (NoSuchElementException nse) {
 								logger.error(nse.getMessage());
 								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, com.rsi.utils.RsiTestingHelper.returmTimeStamp(), com.rsi.utils.RsiTestingHelper.returmTimeStamp());
@@ -127,9 +117,7 @@ public class RsitesterMain {
 							logger.debug("testcaseId " + currentTestCaseId + " identified as INPUT");
 							try{
 								status = chromeTester.inputPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("xpath"), rsForTestCases.getString("base_url"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
-								if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("sleeps"))) {
-									TimeUnit.SECONDS.sleep(15);
-								}
+								sleepIfInstructedTo(rsForTestCases.getString("sleeps"));
 							}catch(NoSuchElementException nse) {
 								logger.error("Error when handling Input type case... " + nse.getMessage());
 								updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, com.rsi.utils.RsiTestingHelper.returmTimeStamp(), com.rsi.utils.RsiTestingHelper.returmTimeStamp());
@@ -201,7 +189,7 @@ public class RsitesterMain {
 						if(!com.rsi.utils.RsiTestingHelper.checkEmpty(rsForTestCases.getString("new_tab")) && rsForTestCases.getString("new_tab").equalsIgnoreCase("1")) {
 							chromeTester.switchToNewTab();
 							try {
-								TimeUnit.SECONDS.sleep(15);
+								TimeUnit.SECONDS.sleep(5);
 							} catch (InterruptedException e) {
 								e.printStackTrace();
 							}
@@ -241,6 +229,20 @@ public class RsitesterMain {
 			chromeTester.getDriver().quit();
 		}
 	    
+	}
+
+	private static void sleepIfInstructedTo(String sleep) throws InterruptedException {
+		//rsForTestCases.getString("sleeps")
+		if(!com.rsi.utils.RsiTestingHelper.checkEmpty(sleep)) {
+			try {
+				int iSleepTimeInSecs = Integer.parseInt(sleep);
+				TimeUnit.SECONDS.sleep(iSleepTimeInSecs);
+			} catch (NumberFormatException nfe) {
+				logger.debug("Could not convert the sleep time to a number sleep time set was [ " + sleep + " ]");
+				TimeUnit.SECONDS.sleep(15);
+			}
+		}
+
 	}
 
 	private static String buildParamString(String[] params, String read_element) {

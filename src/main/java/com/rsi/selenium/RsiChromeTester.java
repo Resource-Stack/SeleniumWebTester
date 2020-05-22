@@ -199,7 +199,7 @@ public class RsiChromeTester {
 						}
 						else {
 							status = "Failed";
-							description = description.concat(" - No read element or value onthe page to inspect");
+							description = description.concat(" - valueOfElement was [" + valueOfElement + "],  expected value was [" + readElement + "]");
 						}
 					}
 

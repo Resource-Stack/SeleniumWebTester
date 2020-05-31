@@ -350,6 +350,9 @@ public class RsiChromeTester {
 			// TODO this is failing for select.
 			//element.clear();
 			element.sendKeys(inputValue);
+			// (SAMEER 05302020) this can be an additional switch on an input field, if we should select the inputted value esp. in cases where inputted value has to be qualified from a dynamic list.
+			TimeUnit.SECONDS.sleep(2);
+			element.sendKeys(Keys.ENTER);
 			status = checkStatus(url, fieldName, "");
 		}catch (NoSuchElementException nse) {
 			nse.printStackTrace();

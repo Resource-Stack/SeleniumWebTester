@@ -39,7 +39,7 @@ public class RsitesterMain {
 		// STEP 2: Read the scheduler table. 
 		try {
 			stmt = conn.createStatement();
-			rs = stmt.executeQuery("SELECT s.id id, s.test_suite_id, s.scheduled_date, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id AND s.status = 'READY'");
+			rs = stmt.executeQuery("SELECT s.id id, s.test_suite_id, s.scheduled_date, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id AND s.status = 'READY' ORDER BY s.updated_at DESC LIMIT 1");
 			
 			while (rs.next()) {
 				int currentSchedulerId = rs.getInt("id");
@@ -65,6 +65,11 @@ public class RsitesterMain {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
+				}
+				if(!updateSchedulerWithRunning(conn, currentSchedulerId, currentSuiteId, app)) {
+					logger.info("Cannot attain a lock on this scheduler id [" + currentSchedulerId + "] object. QUITTING...");
+					chromeTester.getDriver().quit();
+					return;
 				}
 				logger.debug("Now starting to process Scheduled Job Id [ " + rs.getString("id")+ " ], this job was scheduled on [ " + rs.getString(3) + " ], suite id is [ " + rs.getInt("test_suite_id") + " ]");
 				// Now try to access all the test cases for the test_suite_id submitted for this run.
@@ -381,6 +386,29 @@ public class RsitesterMain {
 			}
 		}
 
+	}
+
+	private static boolean updateSchedulerWithRunning(Connection conn, int currentSchedulerId, int currentSuiteId, H2OApplication app) {
+		PreparedStatement pstmt = null;
+		boolean retVal = true;
+		try {
+			pstmt = conn.prepareStatement("UPDATE schedulers SET status = 'Running' WHERE id = ?");
+			pstmt.setInt(1, currentSchedulerId);
+
+			pstmt.execute();
+			logger.info("Updated Scheduler id [" + currentSchedulerId + "], with running");
+		} catch (SQLException sqle) {
+			logger.error("Could not update the Scheduler id [" + currentSchedulerId + "], with running, this process should exit without going any further");
+			logger.error(sqle);
+			retVal = false;
+		} finally {
+			try {
+				pstmt.close();
+			} catch (SQLException e) {
+				logger.error("ERROR when updating the scheduler to be in running state...", e);
+			}
+		}
+		return retVal;
 	}
 
 	private static void updateSchedulerWithError(Connection conn, int currentSchedulerId, int currentSuiteId, H2OApplication app) {

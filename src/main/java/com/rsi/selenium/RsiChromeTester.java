@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -267,11 +268,14 @@ public class RsiChromeTester {
 		    //NEXT Section should only be called if the status has not been populated as yet. Which in the case of anchor tag is already taken care of. (Sameer 01262020)
 			if(status.equalsIgnoreCase("initial") && clickableElement != null){
 				if(action.equalsIgnoreCase("Click") ) {
-					clickableElement.click();
-					if(!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl))
-						status = checkStatus(url, readElement, actionUrl);
-					else
-						status = "Success";
+					if(performAction(clickableElement)) {
+						//clickableElement.click();
+						if(!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl))
+							status = checkStatus(url, readElement, actionUrl);
+						else
+							status = "Success";
+					}
+
 				}
 				else if(action.equalsIgnoreCase("tab")) {
 					clickableElement.sendKeys(Keys.TAB);
@@ -290,9 +294,12 @@ public class RsiChromeTester {
 			logger.error("Error no element found on the page " + nse.getMessage());
 			description = description.concat(" - " + nse.getMessage() + ".");
 			status = "Failure";
+		} catch (InterruptedException e) {
+			logger.error("Error Interrupted exception " + e.getMessage());
+			description = description.concat(" - " + e.getMessage() + ".");
+			status = "Failure";
 		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error("Error other exception " + e.getMessage());
+			logger.error("Error unknown exception " + e.getMessage());
 			description = description.concat(" - " + e.getMessage() + ".");
 			status = "Failure";
 		} finally {
@@ -311,6 +318,19 @@ public class RsiChromeTester {
 		}
 		
 		return status;
+	}
+
+	private boolean performAction(WebElement clickableElement) throws NoSuchElementException, InterruptedException{
+		boolean bRetStatus = false;
+		try {
+			clickableElement.click();
+		} catch(WebDriverException wde) {
+			Actions action = new Actions(driver);
+			action.moveToElement(clickableElement).click().perform();
+		}
+		bRetStatus = true;
+
+		return bRetStatus;
 	}
 
 	private String checkStatus(String url, String readElement, String actionUrl) {
@@ -334,7 +354,7 @@ public class RsiChromeTester {
 		return "Success";
 	}
 
-	public String inputPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String field_type, String inputValue, String xpath, String base_url, String need_screenshot,  String initialDescription, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
+	public String inputPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName, String field_type, String inputValue, String xpath, String base_url, String need_screenshot,  String initialDescription, String enterAction, int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
 		String status = "Failed";
 		WebElement element = null;
 		String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
@@ -352,7 +372,9 @@ public class RsiChromeTester {
 			element.sendKeys(inputValue);
 			// (SAMEER 05302020) this can be an additional switch on an input field, if we should select the inputted value esp. in cases where inputted value has to be qualified from a dynamic list.
 			TimeUnit.SECONDS.sleep(2);
-			element.sendKeys(Keys.ENTER);
+			if(com.rsi.utils.RsiTestingHelper.checkEmpty(enterAction)){
+				element.sendKeys(Keys.ENTER);
+			}
 			status = checkStatus(url, fieldName, "");
 		}catch (NoSuchElementException nse) {
 			nse.printStackTrace();

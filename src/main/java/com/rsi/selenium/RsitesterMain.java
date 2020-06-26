@@ -73,7 +73,7 @@ public class RsitesterMain {
 				}
 				logger.debug("Now starting to process Scheduled Job Id [ " + rs.getString("id")+ " ], this job was scheduled on [ " + rs.getString(3) + " ], suite id is [ " + rs.getInt("test_suite_id") + " ]");
 				// Now try to access all the test cases for the test_suite_id submitted for this run.
-				pstmt = conn.prepareStatement("SELECT tc.id as id, tc.field_name as field_name, tc.field_type as field_type, tc.read_element as read_element, tc.xpath as xpath, tc.input_value as input_value, tc.string as string, tc.action as action, ts.base_url as base_url, tc.action_url as action_url, tc.sleeps as sleeps, cs.sequence as sequence, tc.new_tab as new_tab, tc.need_screenshot as need_screenshot, tc.description as description FROM test_cases tc, case_suites cs, test_suites ts WHERE cs.test_case_id = tc.id AND ts.id = cs.test_suite_id AND cs.test_suite_id = ? ORDER BY cs.sequence");
+				pstmt = conn.prepareStatement("SELECT tc.id as id, tc.field_name as field_name, tc.field_type as field_type, tc.read_element as read_element, tc.xpath as xpath, tc.input_value as input_value, tc.string as string, tc.action as action, ts.base_url as base_url, tc.action_url as action_url, tc.sleeps as sleeps, cs.sequence as sequence, tc.new_tab as new_tab, tc.need_screenshot as need_screenshot, tc.description as description, tc.enter_action as enter_action FROM test_cases tc, case_suites cs, test_suites ts WHERE cs.test_case_id = tc.id AND ts.id = cs.test_suite_id AND cs.test_suite_id = ? ORDER BY cs.sequence");
 				pstmt.setInt(1, rs.getInt("test_suite_id"));
 				if (pstmt.execute() == true) {
 					rsForTestCases = pstmt.getResultSet();
@@ -121,7 +121,7 @@ public class RsitesterMain {
 								rsForTestCases.getString("action")) == "INPUT") {
 							logger.debug("testcaseId " + currentTestCaseId + " identified as INPUT");
 							try{
-								status = chromeTester.inputPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("xpath"), rsForTestCases.getString("base_url"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), currentSchedulerId, currentTestCaseId, currentTestSequence);
+								status = chromeTester.inputPageElement(conn, app.getUrl(), app.getLoginName(), app.getLoginPwd(), rsForTestCases.getString("field_name"), rsForTestCases.getString("field_type"), rsForTestCases.getString("input_value"), rsForTestCases.getString("xpath"), rsForTestCases.getString("base_url"), rsForTestCases.getString("need_screenshot"), rsForTestCases.getString("description"), rsForTestCases.getString("enter_action"), currentSchedulerId, currentTestCaseId, currentTestSequence);
 								sleepIfInstructedTo(rsForTestCases.getString("sleeps"));
 							}catch(NoSuchElementException nse) {
 								logger.error("Error when handling Input type case... " + nse.getMessage());

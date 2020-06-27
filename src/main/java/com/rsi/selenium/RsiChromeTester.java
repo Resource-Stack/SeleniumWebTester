@@ -14,6 +14,7 @@ import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class RsiChromeTester {
@@ -339,6 +340,13 @@ public class RsiChromeTester {
 				return "Success";
 			}
 			else {
+				// sometimes the actionURL is present because of a Ajax call inside a div window.
+				// hence no need to switch tab. in those situations we can return success.
+				Set<String> handles =  driver.getWindowHandles();
+				if (handles.size() == 1) {
+					// no new tabs exist. assuming that this is a new url in the same tab.
+					return "Success";
+				}
 				logger.debug("In check status method returning false since actionUrl [" + actionUrl + "] is not the same as the url [" + driver.getCurrentUrl() + "]");
 				// Maybe it is because the new page has opened on a new tab. Switch tab and see if the currentUrl in that tab is the same as actionUrl
 				switchToNewTab();

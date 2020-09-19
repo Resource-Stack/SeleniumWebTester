@@ -380,7 +380,7 @@ public class RsiChromeTester {
 			element.sendKeys(inputValue);
 			// (SAMEER 05302020) this can be an additional switch on an input field, if we should select the inputted value esp. in cases where inputted value has to be qualified from a dynamic list.
 			TimeUnit.SECONDS.sleep(2);
-			if(com.rsi.utils.RsiTestingHelper.checkEmpty(enterAction)){
+			if(enterAction.equalsIgnoreCase("1")){
 				element.sendKeys(Keys.ENTER);
 			}
 			status = checkStatus(url, fieldName, "");

@@ -432,8 +432,13 @@ public class RsiChromeTester {
 			}
 		}
 		else {
-			// todo (SAMEER - changed By.id to By.name. In addition to this change, we also need to make sure if this next line fails it is handled by some other means)
-			element = driver.findElement(By.name(fieldName));
+			// SAMEER - 09212020 changed By.id to By.name. In addition to this change, we also need to make sure if this next line fails it is handled by some other means
+			try {
+				element = driver.findElement(By.name(fieldName));
+			} catch (Exception e) {
+				logger.error("Could not find the element with the fieldName now check for XPath by recursively calling the same method");
+				fetchWebElement(fieldCategory, null, xpath);
+			}
 		}
 		return element;
 	}

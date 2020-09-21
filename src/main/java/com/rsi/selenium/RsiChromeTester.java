@@ -432,7 +432,8 @@ public class RsiChromeTester {
 			}
 		}
 		else {
-			element = driver.findElement(By.id(fieldName));
+			// todo (SAMEER - changed By.id to By.name. In addition to this change, we also need to make sure if this next line fails it is handled by some other means)
+			element = driver.findElement(By.name(fieldName));
 		}
 		return element;
 	}

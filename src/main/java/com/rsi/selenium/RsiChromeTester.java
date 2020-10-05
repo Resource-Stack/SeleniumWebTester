@@ -436,12 +436,12 @@ public class RsiChromeTester {
 			try {
 				element = driver.findElement(By.id(fieldName));
 			} catch(NoSuchElementException nse) {
-				try {
-					element = driver.findElement(By.name(fieldName));
-				} catch (Exception e) {
-					logger.error("Could not find the element with the fieldName " + fieldName + "  now check for XPath by calling the same method");
+				//try {
+				//	element = driver.findElement(By.name(fieldName));
+				//} catch (Exception e) {
+				//	logger.error("Could not find the element with the fieldName " + fieldName + "  now check for XPath by calling the same method");
 					fetchWebElement(fieldCategory, null, xpath);
-				}
+				//}
 			}
 		}
 		return element;

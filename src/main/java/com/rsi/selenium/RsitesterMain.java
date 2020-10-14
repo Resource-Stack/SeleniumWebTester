@@ -19,14 +19,19 @@ import java.util.concurrent.TimeUnit;
 public class RsitesterMain {
 	final static Logger logger = Logger.getLogger(RsitesterMain.class);
 	public static void main(String[] args) {
-		Connection conn 		= null;
-		Statement stmt 			= null;
-		PreparedStatement pstmt	= null;
-		ResultSet rsForTestCases= null;
-		ResultSet rs 			= null;
-		H2OApplication app		= null;
-		
-		RsiChromeTester chromeTester = new RsiChromeTester();
+		Connection conn 				= null;
+		Statement stmt 					= null;
+		PreparedStatement pstmt			= null;
+		ResultSet rsForTestCases		= null;
+		ResultSet rs 					= null;
+		H2OApplication app				= null;
+		RsiChromeTester chromeTester	= null;
+
+		if(args.length == 0)
+			chromeTester = new RsiChromeTester("start-maximized");
+		else {
+			chromeTester = new RsiChromeTester(args[0]);
+		}
 		
 		
 		String status 		= "Failed";

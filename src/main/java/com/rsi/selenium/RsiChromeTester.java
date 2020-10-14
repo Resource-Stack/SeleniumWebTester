@@ -25,10 +25,11 @@ public class RsiChromeTester {
 		return driver;
 	}
 
-	public RsiChromeTester() {
+	public RsiChromeTester(String runType) {
 		System.setProperty("webdriver.chrome.driver", "C:\\java_libs\\chromedriver.exe");
 		//options.addArguments("--headless");
-		options.addArguments("--start-maximized");
+		//options.addArguments("--start-maximized");
+		options.addArguments("--" + runType);
 		driver = new ChromeDriver(options);
 
 		

@@ -44,8 +44,13 @@ public class RsitesterMain {
 		// STEP 2: Read the scheduler table. 
 		try {
 			stmt = conn.createStatement();
-			rs = stmt.executeQuery("SELECT s.id id, s.test_suite_id, s.scheduled_date, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id AND s.status = 'READY' ORDER BY s.updated_at DESC LIMIT 1");
-			
+			if(com.rsi.utils.RsiTestingHelper.checkEmpty(args[1])) {
+				rs = findResultsToRun(conn, stmt, "REGULAR");
+			}
+			else { // Now you are running load testing. so just schedule any test_suite that you find in the test suites.
+				rs = findResultsToRun(conn, stmt, args[1]);
+			}
+
 			while (rs.next()) {
 				int currentSchedulerId = rs.getInt("id");
 				int currentSuiteId = rs.getInt("test_suite_id");
@@ -239,6 +244,27 @@ public class RsitesterMain {
 			chromeTester.getDriver().quit();
 		}
 	    
+	}
+
+	private static ResultSet findResultsToRun(Connection conn, Statement stmt, String arg) throws SQLException{
+		ResultSet rs = null;
+		int newSchedulerId = 0;
+		if(!arg.equalsIgnoreCase("REGULAR")) {
+			// TODO create a READY Entry for the last test_suite_id.
+			PreparedStatement pstmt = conn.prepareStatement("INSERT INTO schedulers (test_suite_id, status) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
+			pstmt.setInt(1, new Integer(arg).intValue());
+			pstmt.setString(2, "READY");
+			pstmt.executeUpdate();
+			ResultSet rs1 = pstmt.getGeneratedKeys();
+			if (rs1.next()) {
+				newSchedulerId = rs1.getInt(1);
+			}
+			rs = stmt.executeQuery("SELECT s.id id, s.test_suite_id, s.scheduled_date, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id and s.id = " + newSchedulerId);
+		} else {
+			rs = stmt.executeQuery("SELECT s.id id, s.test_suite_id, s.scheduled_date, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id AND s.status = 'READY' ORDER BY s.updated_at DESC LIMIT 1");
+		}
+
+		return rs;
 	}
 
 	private static void sleepIfInstructedTo(String sleep) throws InterruptedException {

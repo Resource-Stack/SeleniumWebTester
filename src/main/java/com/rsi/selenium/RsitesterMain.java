@@ -45,7 +45,7 @@ public class RsitesterMain {
 		// STEP 2: Read the scheduler table.
 		try {
 			stmt = conn.createStatement();
-			int schedulerID = args.length == 1 ? Integer.parseInt(args[1]) : -1;
+			int schedulerID = args.length == 2 ? Integer.parseInt(args[1]) : -1;
 			// Search based on schedulerID
 			rs = findResultFromSchedulerID(conn, stmt, schedulerID);
 			// if (com.rsi.utils.RsiTestingHelper.checkEmpty(args[1])) {

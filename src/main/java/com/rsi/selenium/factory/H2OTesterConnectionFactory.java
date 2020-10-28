@@ -22,7 +22,6 @@ public class H2OTesterConnectionFactory {
 			logger.debug("Mysql driver loaded successfully...");
 
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -44,7 +43,6 @@ public class H2OTesterConnectionFactory {
 				commandsForEnvironment.add(command);
 			}
 		} catch (SQLException sqle) {
-			// TODO add exception handler logic here.
 			sqle.printStackTrace();
 		}
 
@@ -57,7 +55,6 @@ public class H2OTesterConnectionFactory {
 			try {
 				factoryInstance = new H2OTesterConnectionFactory();
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -76,8 +73,8 @@ public class H2OTesterConnectionFactory {
 
 				dbInstance = DriverManager.getConnection(
 						s.getString("DBURL") + "?user=" + s.getString("DBUSER") + "&password=" + s.getString("DBPASS"));
+
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -113,7 +110,6 @@ public class H2OTesterConnectionFactory {
 			}
 
 		} catch (Exception e) {
-			// TODO: handle exception
 		}
 
 		return app;

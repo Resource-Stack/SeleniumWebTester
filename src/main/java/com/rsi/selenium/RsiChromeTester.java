@@ -37,7 +37,7 @@ public class RsiChromeTester {
 
 	public String loginToApp(String url_to_test, String userNameField, String passwordField, String btnField,
 			String userName, String password, String successElement) throws NoSuchElementException {
-		String status = "Failed";
+		String status = "Failure";
 		logger.debug("PARAMS ARE:" + url_to_test + userNameField + passwordField + btnField + userName + password);
 		driver.get(url_to_test);
 		// Alternatively the same thing can be done like this
@@ -123,12 +123,10 @@ public class RsiChromeTester {
 	}
 
 	public String testPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName,
-			String xpath, String fieldType, String readElement, String need_screenshot, String initialDescription,
-			int currentSchedulerId, int currentTestCaseId, int currentTestSequence) {
+			String xpath, String fieldType, String readElement, String initialDescription, int currentSchedulerId,
+			int currentTestCaseId, int currentTestSequence, int resultSuiteId) {
 		String status = "Initial";
 		WebElement userNameElement = null;
-		String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
-		String endTime = null;
 		String description = initialDescription;
 		String valueOfElement = null;
 
@@ -174,7 +172,7 @@ public class RsiChromeTester {
 
 					} else {
 						description = description.concat(" read element was blank. dont know how to compare.");
-						status = "Failed";
+						status = "Failure";
 					}
 
 				} else {
@@ -202,14 +200,14 @@ public class RsiChromeTester {
 						if (valueOfElement.matches(readElement.substring(1, readElement.length() - 1))) {
 							status = "Success";
 						} else {
-							status = "Failed";
+							status = "Failure";
 							description = description.concat(" - No read element or value onthe page to inspect");
 						}
 					} else {
 						if (valueOfElement.equalsIgnoreCase(readElement)) {
 							status = "Success";
 						} else {
-							status = "Failed";
+							status = "Failure";
 							description = description.concat(" - valueOfElement was [" + valueOfElement
 									+ "],  expected value was [" + readElement + "]");
 						}
@@ -220,7 +218,6 @@ public class RsiChromeTester {
 				}
 				logger.info("Element found " + fieldName + " successfully.");
 			}
-			endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
 		} catch (NoSuchElementException nse) {
 			nse.printStackTrace();
 			logger.error("Error no element found on the page " + nse.getMessage());
@@ -234,32 +231,16 @@ public class RsiChromeTester {
 		} finally {
 			driver.switchTo().defaultContent();
 		}
-		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
-		if (!status.equalsIgnoreCase("SUCCESS")) {
-			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime,
-					description);
-			takeScreenshot(conn, resultCaseId);
-		} else {
-			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime,
-					endTime, description);
-			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
-				if (!need_screenshot.equalsIgnoreCase("0")) {
-					takeScreenshot(conn, resultCaseId);
-				}
-			}
-		}
 
 		return status;
 	}
 
 	public String actionPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName,
 			String fieldType, String readElement, String xpath, String action, String actionUrl, String baseURL,
-			String need_screenshot, String initialDescription, int currentSchedulerId, int currentTestCaseId,
-			int currentTestSequence) {
+			String initialDescription, int currentSchedulerId, int currentTestCaseId, int currentTestSequence,
+			int resultSuiteId) {
 		String status = "Initial";
 		WebElement clickableElement = null;
-		String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
-		String endTime = "";
 		String description = initialDescription;
 
 		try {
@@ -303,7 +284,7 @@ public class RsiChromeTester {
 				}
 			} else {
 				if (status.equalsIgnoreCase("initial"))
-					status = "failed";
+					status = "Failure";
 			}
 
 		} catch (NoSuchElementException nse) {
@@ -321,18 +302,6 @@ public class RsiChromeTester {
 			status = "Failure";
 		} finally {
 			driver.switchTo().defaultContent();
-		}
-		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
-		if (!status.equalsIgnoreCase("SUCCESS")) {
-			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime,
-					description);
-			takeScreenshot(conn, resultCaseId);
-		} else {
-			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime,
-					endTime, description);
-			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot) && !need_screenshot.equalsIgnoreCase("0")) {
-				takeScreenshot(conn, resultCaseId);
-			}
 		}
 
 		return status;
@@ -372,7 +341,7 @@ public class RsiChromeTester {
 				if (actionUrl.equals(driver.getCurrentUrl())) {
 					return "Success";
 				} else {
-					return "Failed";
+					return "Failure";
 				}
 			}
 		}
@@ -383,11 +352,9 @@ public class RsiChromeTester {
 	public String inputPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName,
 			String field_type, String inputValue, String xpath, String base_url, String need_screenshot,
 			String initialDescription, String enterAction, int currentSchedulerId, int currentTestCaseId,
-			int currentTestSequence) {
-		String status = "Failed";
+			int currentTestSequence, int resultSuiteId) {
+		String status = "Failure";
 		WebElement element = null;
-		String startTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
-		String endTime = "";
 		String currentPageUrl = driver.getCurrentUrl();
 		String description = initialDescription;
 		try {
@@ -421,18 +388,6 @@ public class RsiChromeTester {
 			// TODO if switched to a iframe switch back to the main window.
 			driver.switchTo().defaultContent();
 
-		}
-		endTime = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
-		if (!status.equalsIgnoreCase("SUCCESS")) {
-			long resultCaseId = updateTestCaseWithError(conn, currentTestCaseId, currentSchedulerId, startTime, endTime,
-					description);
-			takeScreenshot(conn, resultCaseId);
-		} else {
-			long resultCaseId = updateTestCaseWithSuccess(conn, currentTestCaseId, currentSchedulerId, startTime,
-					endTime, description);
-			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot) && !need_screenshot.equalsIgnoreCase("0")) {
-				takeScreenshot(conn, resultCaseId);
-			}
 		}
 		return status;
 	}
@@ -482,50 +437,7 @@ public class RsiChromeTester {
 		return bRetval;
 	}
 
-	private long updateTestCaseWithSuccess(Connection conn, int currentTestCaseId, int currentSchedulerId,
-			String startTime, String endTime, String description) {
-		long newResultCaseId = -1;
-		PreparedStatement pstmt = null;
-		try {
-			pstmt = conn.prepareStatement(
-					"INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, error_description, created_at, updated_at) VALUES(?,?,?,?,STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'),STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'))",
-					Statement.RETURN_GENERATED_KEYS);
-			pstmt.setInt(1, 1);
-			pstmt.setInt(2, currentTestCaseId);
-			pstmt.setInt(3, currentSchedulerId);
-			pstmt.setString(4, description);
-			pstmt.setString(5, startTime);
-			pstmt.setString(6, endTime);
-			if (pstmt.executeUpdate() == 1) {
-				ResultSet rs = pstmt.getGeneratedKeys();
-
-				if (rs.next()) {
-					newResultCaseId = rs.getLong(1);
-					logger.info("Inserted ID -" + newResultCaseId); // display inserted record
-				}
-				logger.info("Inserted TestCase Result id [" + currentTestCaseId + " ], with Success");
-			} else {
-				logger.error("Could not inserted the Test Case id in Results [" + currentTestCaseId
-						+ " ] with Error Status. Please delete it manually. ");
-			}
-
-		} catch (SQLException e) {
-			logger.error("Could not update the Test Case with Result for id [" + currentTestCaseId
-					+ " ] with Success Status. Please delete it manually. ");
-			e.printStackTrace();
-		} finally {
-			try {
-				pstmt.close();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		}
-
-		return newResultCaseId;
-
-	}
-
-	private String takeScreenshot(Connection conn, long resultCaseId) {
+	public String takeScreenshot(Connection conn, long resultCaseId) {
 		String fileName = new Long(resultCaseId).toString() + ".png";
 		try {
 			TakesScreenshot ts = (TakesScreenshot) driver;
@@ -545,45 +457,6 @@ public class RsiChromeTester {
 			logger.error("Exception while taking screenshot " + e.getMessage());
 		}
 		return fileName;
-	}
-
-	private long updateTestCaseWithError(Connection conn, int currentTestCaseId, int currentSchedulerId,
-			String startTime, String endTime, String description) {
-		long newResultCaseId = -1;
-		PreparedStatement pstmt = null;
-		try {
-			pstmt = conn.prepareStatement(
-					"INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, error_description, created_at, updated_at) VALUES(?,?,?,?, STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'),STR_TO_DATE(?,'%Y-%m-%d %H:%i:%s'))",
-					Statement.RETURN_GENERATED_KEYS);
-			pstmt.setInt(1, 2);
-			pstmt.setInt(2, currentTestCaseId);
-			pstmt.setInt(3, currentSchedulerId);
-			pstmt.setString(4, description);
-			pstmt.setString(5, startTime);
-			pstmt.setString(6, endTime);
-			pstmt.execute();
-			ResultSet rs = pstmt.getGeneratedKeys();
-
-			if (rs.next()) {
-				newResultCaseId = rs.getLong(1);
-				logger.info("Inserted ID -" + newResultCaseId); // display inserted record
-			}
-			logger.info("Inserted TestCase Result id [" + currentTestCaseId + " ], with Error");
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			logger.error("Could not update the Test Case with Result for id [" + currentTestCaseId
-					+ " ] with Error Status. Please delete it manually. ");
-			e.printStackTrace();
-		} finally {
-			try {
-				pstmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-
-		return newResultCaseId;
 	}
 
 	public boolean switchToNewTab() {

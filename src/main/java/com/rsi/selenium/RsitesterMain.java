@@ -40,7 +40,6 @@ public class RsitesterMain {
 		try {
 			stmt = conn.createStatement();
 			int schedulerID = args.length == 2 ? Integer.parseInt(args[1]) : -1;
-
 			// Search based on schedulerID
 			scheduledSet = findResultFromSchedulerID(conn, stmt, schedulerID);
 
@@ -365,9 +364,10 @@ public class RsitesterMain {
 		PreparedStatement pstmt = null;
 		boolean success = false;
 		try {
-			pstmt = conn.prepareStatement("UPDATE result_suites SET rd_id = ? WHERE id = ?");
+			pstmt = conn.prepareStatement("UPDATE result_suites SET rd_id = ?, end_time = ? WHERE id = ?");
 			pstmt.setInt(1, status); // Complete = 1, Error = 2, Running = 3
-			pstmt.setInt(2, resultSuiteId);
+			pstmt.setString(2, status == 3 ? "" : com.rsi.utils.RsiTestingHelper.returmTimeStamp());
+			pstmt.setInt(3, resultSuiteId);
 			success = pstmt.executeUpdate() > 0;
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -394,12 +394,14 @@ public class RsitesterMain {
 
 		try {
 			pstmt = conn.prepareStatement(
-					"INSERT INTO result_suites (rd_id, scheduler_id, test_suite_id, scheduler_index) VALUES(?,?,?,?)",
+					"INSERT INTO result_suites (rd_id, scheduler_id, test_suite_id, scheduler_index, start_time) VALUES(?,?,?,?,?)",
 					Statement.RETURN_GENERATED_KEYS);
 			pstmt.setInt(1, 3); // Running
 			pstmt.setInt(2, currentSchedulerId);
 			pstmt.setInt(3, currentSuiteId);
 			pstmt.setInt(4, schedulerIndex);
+			pstmt.setString(5, com.rsi.utils.RsiTestingHelper.returmTimeStamp());
+
 			if (pstmt.execute()) {
 				logInfoMessage("Created new result suite.");
 			} else {

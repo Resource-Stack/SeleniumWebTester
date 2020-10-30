@@ -71,8 +71,15 @@ public class H2OTesterConnectionFactory {
 				// "user=healthix&password=rsi1111");
 				ResourceBundle s = ResourceBundle.getBundle("dbconfig");
 
+				// dbInstance = DriverManager.getConnection(
+				// s.getString("DBURL") + "?user=" + s.getString("DBUSER") + "&password=" +
+				// s.getString("DBPASS"));
+
 				dbInstance = DriverManager.getConnection(
-						s.getString("DBURL") + "?user=" + s.getString("DBUSER") + "&password=" + s.getString("DBPASS"));
+
+						"jdbc:mysql://localhost:3306/selenium_rails?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
+
+								+ "&user=" + "sparsha" + "&password=" + "root");
 
 			} catch (SQLException e) {
 				e.printStackTrace();

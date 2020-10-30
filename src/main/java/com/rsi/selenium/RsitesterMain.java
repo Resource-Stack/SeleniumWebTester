@@ -3,6 +3,7 @@ package com.rsi.selenium;
 import com.rsi.dataObject.CustomCommand;
 import com.rsi.dataObject.H2OApplication;
 import com.rsi.dataObject.TestCase;
+import com.rsi.dataObject.TestResult;
 import com.rsi.selenium.factory.H2OTesterConnectionFactory;
 import com.rsi.utils.EmailManagementUtility;
 
@@ -115,11 +116,11 @@ public class RsitesterMain {
 					final Integer schedulerIndex = i + 1;
 					threadPool.submit(new Runnable() {
 						public void run() {
+							TestResult res = new TestResult();
 							RsiChromeTester chromeTester = null;
 							Integer resultSuiteId = RsitesterMain.createNewResultSuite(conn, currentSchedulerId,
 									currentSuiteId, schedulerIndex);
 							try {
-								String status = "Failure";
 								chromeTester = new RsiChromeTester(chromiumMode);
 								chromeTesters.add(chromeTester);
 
@@ -162,7 +163,7 @@ public class RsitesterMain {
 
 										if (testCaseType == "INSPECT") {
 											try {
-												status = chromeTester.testPageElement(conn, app.getUrl(),
+												res = chromeTester.testPageElement(conn, app.getUrl(),
 														app.getLoginName(), app.getLoginPwd(), curCase.getFieldName(),
 														curCase.getXPath(), curCase.getfieldType(),
 														curCase.getReadElement(), curCase.getDescription(),
@@ -179,7 +180,7 @@ public class RsitesterMain {
 											}
 										} else if (testCaseType == "ACTION") {
 											try {
-												status = chromeTester.actionPageElement(conn, app.getUrl(),
+												res = chromeTester.actionPageElement(conn, app.getUrl(),
 														app.getLoginName(), app.getLoginPwd(), curCase.getFieldName(),
 														curCase.getfieldType(), curCase.getReadElement(),
 														curCase.getXPath(), curCase.getAction(), curCase.getActionUrl(),
@@ -197,7 +198,7 @@ public class RsitesterMain {
 											}
 										} else if (testCaseType == "INPUT") {
 											try {
-												status = chromeTester.inputPageElement(conn, app.getUrl(),
+												res = chromeTester.inputPageElement(conn, app.getUrl(),
 														app.getLoginName(), app.getLoginPwd(), curCase.getFieldName(),
 														curCase.getfieldType(), curCase.getInputValue(),
 														curCase.getXPath(), curCase.getBaseUrl(),
@@ -243,25 +244,25 @@ public class RsitesterMain {
 															}
 															if (com.rsi.utils.RsiTestingHelper
 																	.checkEmpty(sb.toString())) {
-																status = "Failure";
+																res.setStatus("Failure");
 																caseSuccess = true;
 															} else {
 																logInfoMessage("Return from Custom Script [ "
 																		+ sb.toString() + " ]");
-																status = "Success";
+																res.setStatus("Success");
 															}
 														} else {
 															p.destroy(); // consider using destroyForcibly instead
 														}
 													} catch (IOException ioe) {
-														status = "Failure";
+														res.setStatus("Failure");
 														caseSuccess = false;
 													} catch (RuntimeException re) {
-														status = "Failure";
+														res.setStatus("Failure");
 														caseSuccess = false;
 														logErrorMessage("re.getMessage()");
 													} catch (InterruptedException ine) {
-														status = "Failure";
+														res.setStatus("Failure");
 														caseSuccess = false;
 														logErrorMessage("ine.getMessage()");
 													}
@@ -271,7 +272,7 @@ public class RsitesterMain {
 										}
 
 										Integer resultCaseId = createNewResultCase(conn, currentTestCaseId,
-												currentSchedulerId, resultSuiteId,
+												currentSchedulerId, resultSuiteId, res.getDescription(),
 												com.rsi.utils.RsiTestingHelper.returmTimeStamp(),
 												com.rsi.utils.RsiTestingHelper.returmTimeStamp(), caseSuccess);
 
@@ -282,7 +283,7 @@ public class RsitesterMain {
 											}
 										}
 
-										logDebugMessage("Status returned is [ " + status + " ]");
+										logDebugMessage("Status returned is [ " + res.getStatus() + " ]");
 										if (!com.rsi.utils.RsiTestingHelper.checkEmpty(curCase.getNewTab())
 												&& curCase.getNewTab().equalsIgnoreCase("1")) {
 											chromeTester.switchToNewTab();
@@ -293,10 +294,11 @@ public class RsitesterMain {
 											}
 										}
 
-										statuses.add(status);
+										statuses.add(res.getStatus());
 									}
 
-									RsitesterMain.updateResultSuite(conn, resultSuiteId, status == "Failure" ? 2 : 1);
+									RsitesterMain.updateResultSuite(conn, resultSuiteId,
+											res.getStatus() == "Failure" ? 2 : 1);
 								}
 
 							} catch (SQLException e1) {
@@ -427,7 +429,7 @@ public class RsitesterMain {
 	}
 
 	private static Integer createNewResultCase(Connection conn, int currentTestCaseId, int currentSchedulerId,
-			int currentResultSuiteId, String startTime, String endTime, Boolean success) {
+			int currentResultSuiteId, String description, String startTime, String endTime, Boolean success) {
 		Integer resultCaseID = -1;
 		PreparedStatement pstmt = null;
 		try {
@@ -436,7 +438,7 @@ public class RsitesterMain {
 			pstmt.setInt(1, success ? 1 : 2);
 			pstmt.setInt(2, currentTestCaseId);
 			pstmt.setInt(3, currentSchedulerId);
-			pstmt.setString(4, "");
+			pstmt.setString(4, description);
 			pstmt.setString(5, startTime);
 			pstmt.setString(6, endTime);
 			pstmt.setInt(7, currentResultSuiteId);

@@ -1,5 +1,6 @@
 package com.rsi.selenium;
 
+import com.rsi.dataObject.TestResult;
 import com.rsi.utils.RsiTestingHelper;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -35,9 +36,11 @@ public class RsiChromeTester {
 
 	}
 
-	public String loginToApp(String url_to_test, String userNameField, String passwordField, String btnField,
+	public TestResult loginToApp(String url_to_test, String userNameField, String passwordField, String btnField,
 			String userName, String password, String successElement) throws NoSuchElementException {
 		String status = "Failure";
+		String description = "";
+
 		logger.debug("PARAMS ARE:" + url_to_test + userNameField + passwordField + btnField + userName + password);
 		driver.get(url_to_test);
 		// Alternatively the same thing can be done like this
@@ -106,7 +109,9 @@ public class RsiChromeTester {
 		}
 		// driver.quit();
 
-		return status;
+		TestResult res = new TestResult();
+		res.setStatus(status);
+		return res;
 	}
 
 	private boolean commonHealthCoreUrl(String url_to_test) {
@@ -122,7 +127,7 @@ public class RsiChromeTester {
 		return status;
 	}
 
-	public String testPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName,
+	public TestResult testPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName,
 			String xpath, String fieldType, String readElement, String initialDescription, int currentSchedulerId,
 			int currentTestCaseId, int currentTestSequence, int resultSuiteId) {
 		String status = "Initial";
@@ -232,13 +237,16 @@ public class RsiChromeTester {
 			driver.switchTo().defaultContent();
 		}
 
-		return status;
+		TestResult res = new TestResult();
+		res.setStatus(status);
+		res.setDescription(description);
+		return res;
 	}
 
-	public String actionPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName,
-			String fieldType, String readElement, String xpath, String action, String actionUrl, String baseURL,
-			String initialDescription, int currentSchedulerId, int currentTestCaseId, int currentTestSequence,
-			int resultSuiteId) {
+	public TestResult actionPageElement(Connection conn, String url, String loginName, String loginPwd,
+			String fieldName, String fieldType, String readElement, String xpath, String action, String actionUrl,
+			String baseURL, String initialDescription, int currentSchedulerId, int currentTestCaseId,
+			int currentTestSequence, int resultSuiteId) {
 		String status = "Initial";
 		WebElement clickableElement = null;
 		String description = initialDescription;
@@ -304,7 +312,10 @@ public class RsiChromeTester {
 			driver.switchTo().defaultContent();
 		}
 
-		return status;
+		TestResult res = new TestResult();
+		res.setStatus(status);
+		res.setDescription(description);
+		return res;
 	}
 
 	private boolean performAction(WebElement clickableElement) throws NoSuchElementException, InterruptedException {
@@ -349,7 +360,7 @@ public class RsiChromeTester {
 		return "Success";
 	}
 
-	public String inputPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName,
+	public TestResult inputPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName,
 			String field_type, String inputValue, String xpath, String base_url, String need_screenshot,
 			String initialDescription, String enterAction, int currentSchedulerId, int currentTestCaseId,
 			int currentTestSequence, int resultSuiteId) {
@@ -389,7 +400,10 @@ public class RsiChromeTester {
 			driver.switchTo().defaultContent();
 
 		}
-		return status;
+		TestResult res = new TestResult();
+		res.setStatus(status);
+		res.setDescription(description);
+		return res;
 	}
 
 	private WebElement fetchWebElement(String fieldCategory, String fieldName, String xpath)

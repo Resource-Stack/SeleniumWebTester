@@ -163,12 +163,10 @@ public class RsitesterMain {
 
 										if (testCaseType == "INSPECT") {
 											try {
-												res = chromeTester.testPageElement(conn, app.getUrl(),
-														app.getLoginName(), app.getLoginPwd(), curCase.getFieldName(),
+												res = chromeTester.testPageElement(curCase.getFieldName(),
 														curCase.getXPath(), curCase.getfieldType(),
 														curCase.getReadElement(), curCase.getDescription(),
-														currentSchedulerId, currentTestCaseId, currentTestSequence,
-														resultSuiteId);
+														currentTestSequence);
 												sleepIfInstructedTo(curCase.getSleeps());
 											} catch (NoSuchElementException nse) {
 												logErrorMessage(nse.getMessage());
@@ -180,13 +178,10 @@ public class RsitesterMain {
 											}
 										} else if (testCaseType == "ACTION") {
 											try {
-												res = chromeTester.actionPageElement(conn, app.getUrl(),
-														app.getLoginName(), app.getLoginPwd(), curCase.getFieldName(),
-														curCase.getfieldType(), curCase.getReadElement(),
-														curCase.getXPath(), curCase.getAction(), curCase.getActionUrl(),
-														curCase.getBaseUrl(), curCase.getDescription(),
-														currentSchedulerId, currentTestCaseId, currentTestSequence,
-														resultSuiteId);
+												res = chromeTester.actionPageElement(curCase.getFieldName(),
+														curCase.getfieldType(), curCase.getXPath(), curCase.getAction(),
+														curCase.getActionUrl(), curCase.getBaseUrl(),
+														curCase.getDescription(), currentTestSequence);
 												sleepIfInstructedTo(curCase.getSleeps());
 											} catch (NoSuchElementException nse) {
 												logErrorMessage(nse.getMessage());
@@ -198,13 +193,10 @@ public class RsitesterMain {
 											}
 										} else if (testCaseType == "INPUT") {
 											try {
-												res = chromeTester.inputPageElement(conn, app.getUrl(),
-														app.getLoginName(), app.getLoginPwd(), curCase.getFieldName(),
-														curCase.getfieldType(), curCase.getInputValue(),
-														curCase.getXPath(), curCase.getBaseUrl(),
-														curCase.getNeedScreenshot(), curCase.getDescription(),
-														curCase.getEnterAction(), currentSchedulerId, currentTestCaseId,
-														currentTestSequence, resultSuiteId);
+												res = chromeTester.inputPageElement(curCase.getFieldName(),
+														curCase.getInputValue(), curCase.getXPath(),
+														curCase.getBaseUrl(), curCase.getDescription(),
+														curCase.getEnterAction(), currentTestSequence);
 												sleepIfInstructedTo(curCase.getSleeps());
 											} catch (NoSuchElementException nse) {
 												logErrorMessage(

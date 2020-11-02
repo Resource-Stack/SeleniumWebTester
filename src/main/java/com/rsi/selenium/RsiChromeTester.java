@@ -39,7 +39,6 @@ public class RsiChromeTester {
 	public TestResult loginToApp(String url_to_test, String userNameField, String passwordField, String btnField,
 			String userName, String password, String successElement) throws NoSuchElementException {
 		String status = "Failure";
-		String description = "";
 
 		logger.debug("PARAMS ARE:" + url_to_test + userNameField + passwordField + btnField + userName + password);
 		driver.get(url_to_test);
@@ -127,9 +126,8 @@ public class RsiChromeTester {
 		return status;
 	}
 
-	public TestResult testPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName,
-			String xpath, String fieldType, String readElement, String initialDescription, int currentSchedulerId,
-			int currentTestCaseId, int currentTestSequence, int resultSuiteId) {
+	public TestResult testPageElement(String fieldName, String xpath, String fieldType, String readElement,
+			String initialDescription, int currentTestSequence) {
 		String status = "Initial";
 		WebElement userNameElement = null;
 		String description = initialDescription;
@@ -243,10 +241,8 @@ public class RsiChromeTester {
 		return res;
 	}
 
-	public TestResult actionPageElement(Connection conn, String url, String loginName, String loginPwd,
-			String fieldName, String fieldType, String readElement, String xpath, String action, String actionUrl,
-			String baseURL, String initialDescription, int currentSchedulerId, int currentTestCaseId,
-			int currentTestSequence, int resultSuiteId) {
+	public TestResult actionPageElement(String fieldName, String fieldType, String xpath, String action,
+			String actionUrl, String baseURL, String initialDescription, int currentTestSequence) {
 		String status = "Initial";
 		WebElement clickableElement = null;
 		String description = initialDescription;
@@ -278,7 +274,7 @@ public class RsiChromeTester {
 					if (performAction(clickableElement)) {
 						// clickableElement.click();
 						if (!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl))
-							status = checkStatus(url, readElement, actionUrl);
+							status = checkStatus(actionUrl);
 						else
 							status = "Success";
 					}
@@ -286,7 +282,7 @@ public class RsiChromeTester {
 				} else if (action.equalsIgnoreCase("tab")) {
 					clickableElement.sendKeys(Keys.TAB);
 					if (!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl))
-						status = checkStatus(url, readElement, actionUrl);
+						status = checkStatus(actionUrl);
 					else
 						status = "Success";
 				}
@@ -331,7 +327,7 @@ public class RsiChromeTester {
 		return bRetStatus;
 	}
 
-	private String checkStatus(String url, String readElement, String actionUrl) {
+	private String checkStatus(String actionUrl) {
 		if (!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl)) {
 			if (actionUrl.equals(driver.getCurrentUrl())) {
 				return "Success";
@@ -360,10 +356,13 @@ public class RsiChromeTester {
 		return "Success";
 	}
 
-	public TestResult inputPageElement(Connection conn, String url, String loginName, String loginPwd, String fieldName,
-			String field_type, String inputValue, String xpath, String base_url, String need_screenshot,
-			String initialDescription, String enterAction, int currentSchedulerId, int currentTestCaseId,
-			int currentTestSequence, int resultSuiteId) {
+	private void setAttributeValue(WebElement element, String attribute, String value) {
+		JavascriptExecutor js = (JavascriptExecutor) driver;
+		js.executeScript("arguments[0].setAttribute(arguments[1],arguments[2])", element, attribute, value);
+	}
+
+	public TestResult inputPageElement(String fieldName, String inputValue, String xpath, String base_url,
+			String initialDescription, String enterAction, int currentTestSequence) {
 		String status = "Failure";
 		WebElement element = null;
 		String currentPageUrl = driver.getCurrentUrl();
@@ -374,9 +373,11 @@ public class RsiChromeTester {
 
 			element = fetchWebElement("INPUT", fieldName, xpath);
 
+			setAttributeValue(element, "readonly", "0");
+			setAttributeValue(element, "value", inputValue);
 			// TODO this is failing for select.
 			// element.clear();
-			element.sendKeys(inputValue);
+
 			// (SAMEER 05302020) this can be an additional switch on an input field, if we
 			// should select the inputted value esp. in cases where inputted value has to be
 			// qualified from a dynamic list.
@@ -384,7 +385,7 @@ public class RsiChromeTester {
 			if (enterAction.equalsIgnoreCase("1")) {
 				element.sendKeys(Keys.ENTER);
 			}
-			status = checkStatus(url, fieldName, "");
+			status = checkStatus("");
 		} catch (NoSuchElementException nse) {
 			nse.printStackTrace();
 			logger.error("Error no element found on the page " + nse.getMessage());
@@ -434,7 +435,7 @@ public class RsiChromeTester {
 				// } catch (Exception e) {
 				// logger.error("Could not find the element with the fieldName " + fieldName + "
 				// now check for XPath by calling the same method");
-				fetchWebElement(fieldCategory, null, xpath);
+				element = fetchWebElement(fieldCategory, null, xpath);
 				// }
 			}
 		}

@@ -372,17 +372,23 @@ public class RsiChromeTester {
 				driver.get(base_url);
 
 			element = fetchWebElement("INPUT", fieldName, xpath);
+			String isReadOnly = element.getAttribute("readonly");
+			if (isReadOnly != null && isReadOnly.equalsIgnoreCase("true")) {
+				setAttributeValue(element, "readonly", "0");
+				setAttributeValue(element, "value", inputValue);
+			} else {
+				element.sendKeys(inputValue);
+			}
 
-			setAttributeValue(element, "readonly", "0");
-			setAttributeValue(element, "value", inputValue);
 			// TODO this is failing for select.
 			// element.clear();
 
 			// (SAMEER 05302020) this can be an additional switch on an input field, if we
 			// should select the inputted value esp. in cases where inputted value has to be
 			// qualified from a dynamic list.
-			TimeUnit.SECONDS.sleep(2);
+
 			if (enterAction.equalsIgnoreCase("1")) {
+				TimeUnit.SECONDS.sleep(2);
 				element.sendKeys(Keys.ENTER);
 			}
 			status = checkStatus("");

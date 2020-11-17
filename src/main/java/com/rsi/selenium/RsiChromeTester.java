@@ -28,7 +28,7 @@ public class RsiChromeTester {
 	}
 
 	public RsiChromeTester(String runType) {
-		System.setProperty("webdriver.chrome.driver", "/home/sparsha/Downloads/chromedriver");
+		System.setProperty("webdriver.chrome.driver", "c:\\java_libs\\chromedriver.exe");
 		// options.addArguments("--headless");
 		// options.addArguments("--start-maximized");
 		options.addArguments("--" + runType);
@@ -379,7 +379,7 @@ public class RsiChromeTester {
 			} else {
 				element.sendKeys(inputValue);
 			}
-
+			status = "Success";
 			// TODO this is failing for select.
 			// element.clear();
 
@@ -403,7 +403,7 @@ public class RsiChromeTester {
 			description = description.concat(" - " + e.getMessage() + ".");
 			status = "Failure";
 		} finally {
-			// TODO if switched to a iframe switch back to the main window.
+			// if switched to a iframe switch back to the main window.
 			driver.switchTo().defaultContent();
 
 		}
@@ -486,5 +486,9 @@ public class RsiChromeTester {
 		driver.switchTo().window(tabs.get(tabs.size() - 1));
 
 		return true;
+	}
+
+	public void goToLandingPage(String urlToTest) {
+		driver.get(urlToTest);
 	}
 }

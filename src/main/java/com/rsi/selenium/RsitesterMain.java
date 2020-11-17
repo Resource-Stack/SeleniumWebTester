@@ -129,6 +129,8 @@ public class RsitesterMain {
 										chromeTester.loginToApp(app.getUrl(), app.getLoginField(),
 												app.getPasswordField(), app.getActionButton(), app.getLoginName(),
 												app.getLoginPwd(), "success_field");
+									} else {
+										chromeTester.goToLandingPage(app.getUrl());
 									}
 								} catch (NoSuchElementException nse) {
 									logErrorMessage("Element not found Error [ " + nse.getMessage() + " ]");
@@ -167,6 +169,9 @@ public class RsitesterMain {
 														curCase.getXPath(), curCase.getfieldType(),
 														curCase.getReadElement(), curCase.getDescription(),
 														currentTestSequence);
+												if (res.getStatus().equalsIgnoreCase("Failure")) {
+													caseSuccess = false;
+												}
 												sleepIfInstructedTo(curCase.getSleeps());
 											} catch (NoSuchElementException nse) {
 												logErrorMessage(nse.getMessage());
@@ -262,7 +267,9 @@ public class RsitesterMain {
 
 											}
 										}
-
+										if (res.getStatus().equalsIgnoreCase("Failure")) {
+											caseSuccess = false;
+										}
 										Integer resultCaseId = createNewResultCase(conn, currentTestCaseId,
 												currentSchedulerId, resultSuiteId, res.getDescription(),
 												com.rsi.utils.RsiTestingHelper.returmTimeStamp(),

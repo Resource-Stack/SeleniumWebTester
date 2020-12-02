@@ -277,8 +277,9 @@ public class RsitesterMain {
 												com.rsi.utils.RsiTestingHelper.returmTimeStamp(), caseSuccess);
 
 										String need_screenshot = curCase.getNeedScreenshot();
-										if (!com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
-											if (!need_screenshot.equalsIgnoreCase("0")) {
+										if (!caseSuccess
+												|| !com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
+											if (!caseSuccess || need_screenshot.equalsIgnoreCase("1")) {
 												chromeTester.takeScreenshot(conn, resultCaseId);
 											}
 										}

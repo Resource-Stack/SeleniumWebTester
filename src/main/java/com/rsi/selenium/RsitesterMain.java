@@ -185,8 +185,9 @@ public class RsitesterMain {
 											try {
 												res = chromeTester.actionPageElement(curCase.getFieldName(),
 														curCase.getfieldType(), curCase.getXPath(), curCase.getAction(),
-														curCase.getActionUrl(), curCase.getBaseUrl(),
-														curCase.getDescription(), currentTestSequence);
+														curCase.getActionUrl(), curCase.getInputValue(),
+														curCase.getBaseUrl(), curCase.getDescription(),
+														currentTestSequence);
 												sleepIfInstructedTo(curCase.getSleeps());
 											} catch (NoSuchElementException nse) {
 												logErrorMessage(nse.getMessage());

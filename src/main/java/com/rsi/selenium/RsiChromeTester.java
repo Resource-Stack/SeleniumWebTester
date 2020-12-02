@@ -242,7 +242,7 @@ public class RsiChromeTester {
 	}
 
 	public TestResult actionPageElement(String fieldName, String fieldType, String xpath, String action,
-			String actionUrl, String baseURL, String initialDescription, int currentTestSequence) {
+			String actionUrl, String inputValue, String baseURL, String initialDescription, int currentTestSequence) {
 		String status = "Initial";
 		WebElement clickableElement = null;
 		String description = initialDescription;
@@ -269,7 +269,11 @@ public class RsiChromeTester {
 			// NEXT Section should only be called if the status has not been populated as
 			// yet. Which in the case of anchor tag is already taken care of. (Sameer
 			// 01262020)
-			if (status.equalsIgnoreCase("initial") && clickableElement != null) {
+			if (status.equalsIgnoreCase("initial") && fieldType.equalsIgnoreCase("file")) {
+				if (!RsiTestingHelper.checkEmpty(inputValue)) {
+					clickableElement.sendKeys(inputValue);
+				}
+			} else if (status.equalsIgnoreCase("initial") && clickableElement != null) {
 				if (action.equalsIgnoreCase("Click")) {
 					if (performAction(clickableElement)) {
 						// clickableElement.click();

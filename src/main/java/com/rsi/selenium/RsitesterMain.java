@@ -435,7 +435,8 @@ public class RsitesterMain {
 		PreparedStatement pstmt = null;
 		try {
 			pstmt = conn.prepareStatement(
-					"INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, error_description, created_at, updated_at, result_suite_id) VALUES (?, ?,?,?,?,?,?)");
+					"INSERT INTO result_cases (rd_id,test_case_id,scheduler_id, error_description, created_at, updated_at, result_suite_id) VALUES (?, ?,?,?,?,?,?)",
+					Statement.RETURN_GENERATED_KEYS);
 			pstmt.setInt(1, success ? 1 : 2);
 			pstmt.setInt(2, currentTestCaseId);
 			pstmt.setInt(3, currentSchedulerId);
@@ -443,6 +444,7 @@ public class RsitesterMain {
 			pstmt.setString(5, startTime);
 			pstmt.setString(6, endTime);
 			pstmt.setInt(7, currentResultSuiteId);
+
 			pstmt.execute();
 			ResultSet rs = pstmt.getGeneratedKeys();
 			if (rs.next()) {

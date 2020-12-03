@@ -259,24 +259,23 @@ public class RsiChromeTester {
 			} catch (NoSuchElementException nse) {
 				// we will try one more time by checking all elements of the field type with
 				// getText() of fieldName.
-				List<WebElement> elements = driver.findElements(By.tagName(fieldType));
-				for (WebElement e : elements) {
-					if (e.getText().equalsIgnoreCase(fieldName)) {
-						clickableElement = e;
+				if (!RsiTestingHelper.checkEmpty(fieldType) && !RsiTestingHelper.checkEmpty(fieldName)) {
+					List<WebElement> elements = driver.findElements(By.tagName(fieldType));
+					for (WebElement e : elements) {
+						if (e.getText().equalsIgnoreCase(fieldName)) {
+							clickableElement = e;
+						}
 					}
 				}
 			}
 			// NEXT Section should only be called if the status has not been populated as
 			// yet. Which in the case of anchor tag is already taken care of. (Sameer
 			// 01262020)
-			if (status.equalsIgnoreCase("initial") && fieldType.equalsIgnoreCase("file")) {
-				if (!RsiTestingHelper.checkEmpty(inputValue)) {
+			if (status.equalsIgnoreCase("initial") && clickableElement != null) {
+				if (fieldType.equalsIgnoreCase("file") && !RsiTestingHelper.checkEmpty(inputValue)) {
 					clickableElement.sendKeys(inputValue);
-				}
-			} else if (status.equalsIgnoreCase("initial") && clickableElement != null) {
-				if (action.equalsIgnoreCase("Click")) {
+				} else if (action.equalsIgnoreCase("Click")) {
 					if (performAction(clickableElement)) {
-						// clickableElement.click();
 						if (!com.rsi.utils.RsiTestingHelper.checkEmpty(actionUrl))
 							status = checkStatus(actionUrl);
 						else

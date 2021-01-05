@@ -371,8 +371,10 @@ public class RsiChromeTester {
 		String currentPageUrl = driver.getCurrentUrl();
 		String description = initialDescription;
 		try {
-			if (!currentPageUrl.equalsIgnoreCase(base_url) && currentTestSequence == 1)
-				driver.get(base_url);
+			if (!RsiTestingHelper.checkEmpty(base_url)) {
+				if (!currentPageUrl.equalsIgnoreCase(base_url) && currentTestSequence == 1)
+					driver.get(base_url);
+			}
 
 			element = fetchWebElement("INPUT", fieldName, xpath);
 			String isReadOnly = element.getAttribute("readonly");

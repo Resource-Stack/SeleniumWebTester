@@ -156,8 +156,6 @@ public class RsitesterMain {
 										+ rs.getInt("test_suite_id") + " ]");
 
 								if (casesRetrieved) {
-									// Execute first case and based on the result, continue iterating over the test
-									// cases in a sequence
 									if (flowNotCreated) {
 										for (int j = 0; j < testCaseList.size(); j++) {
 											TestCase curCase = testCaseList.get(j);

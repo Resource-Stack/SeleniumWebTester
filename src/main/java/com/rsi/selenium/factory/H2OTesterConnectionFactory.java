@@ -73,7 +73,6 @@ public class H2OTesterConnectionFactory {
 
 				dbInstance = DriverManager.getConnection(
 						s.getString("DBURL") + "?user=" + s.getString("DBUSER") + "&password=" + s.getString("DBPASS"));
-
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}

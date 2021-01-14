@@ -421,11 +421,18 @@ public class RsiChromeTester {
 	private WebElement fetchWebElement(String fieldCategory, String fieldName, String xpath)
 			throws NoSuchElementException, InterruptedException {
 		WebElement element = null;
-		String[] xpathColl = null;
+
+		String elementXPath = xpath;
 
 		if (hasSwitch(xpath)) {
+			String[] xpathColl = null;
 			xpathColl = xpath.split("<switch>");
-			driver.switchTo().frame(driver.findElement(By.xpath(xpathColl[0])));
+
+			for (Integer i = 0; i < xpathColl.length - 1; i++) {
+				driver.switchTo().frame(driver.findElement(By.xpath(xpathColl[i])));
+			}
+
+			elementXPath = xpathColl[xpathColl.length - 1];
 		}
 
 		Integer recheckCounter = 0;
@@ -433,11 +440,7 @@ public class RsiChromeTester {
 		while (element == null && recheckCounter <= 2) {
 			try {
 				if ((fieldName == null || fieldName.trim().length() == 0)) {
-					if (hasSwitch(xpath)) {
-						element = driver.findElement(By.xpath(xpathColl[1]));
-					} else {
-						element = driver.findElement(By.xpath(xpath));
-					}
+					element = driver.findElement(By.xpath(elementXPath));
 				} else {
 					// SAMEER - 09212020 changed By.id to By.name. In addition to this change, we
 					// also need to make sure if this next line fails it is handled by some other
@@ -445,7 +448,7 @@ public class RsiChromeTester {
 					try {
 						element = driver.findElement(By.id(fieldName));
 					} catch (NoSuchElementException nse) {
-						element = fetchWebElement(fieldCategory, null, xpath);
+						element = fetchWebElement(fieldCategory, null, elementXPath);
 					}
 				}
 			} catch (NoSuchElementException nse) {

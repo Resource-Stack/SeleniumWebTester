@@ -457,13 +457,17 @@ public class RsitesterMain {
 
 		try {
 			pstmt = conn.prepareStatement(
-					"INSERT INTO result_suites (rd_id, scheduler_id, test_suite_id, scheduler_index, start_time) VALUES(?,?,?,?,?)",
+					"INSERT INTO result_suites (rd_id, scheduler_id, test_suite_id, scheduler_index, start_time, created_at, updated_at) VALUES(?,?,?,?,?,?,?)",
 					Statement.RETURN_GENERATED_KEYS);
 			pstmt.setInt(1, 3); // Running
 			pstmt.setInt(2, currentSchedulerId);
 			pstmt.setInt(3, currentSuiteId);
 			pstmt.setInt(4, schedulerIndex);
-			pstmt.setString(5, com.rsi.utils.RsiTestingHelper.returmTimeStamp());
+
+			String timeStamp = com.rsi.utils.RsiTestingHelper.returmTimeStamp();
+			pstmt.setString(5, timeStamp);
+			pstmt.setString(6, timeStamp);
+			pstmt.setString(7, timeStamp);
 
 			if (pstmt.execute()) {
 				logInfoMessage("Created new result suite.");
@@ -596,8 +600,8 @@ public class RsitesterMain {
 				return "INSPECT";
 			}
 
-		} else if (fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("textarea")
-				|| fieldType.equalsIgnoreCase("search")) {
+		} else if (fieldType.equalsIgnoreCase("text") || fieldType.equalsIgnoreCase("number")
+				|| fieldType.equalsIgnoreCase("textarea") || fieldType.equalsIgnoreCase("search")) {
 			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(inputValue)) {
 				return "INPUT";
 			} else if (com.rsi.utils.RsiTestingHelper.checkEmpty(inputValue) && action == null) {

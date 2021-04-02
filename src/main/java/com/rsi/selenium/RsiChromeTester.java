@@ -28,7 +28,7 @@ public class RsiChromeTester {
 	}
 
 	public RsiChromeTester(String runType) {
-		System.setProperty("webdriver.chrome.driver", "c:\\java_libs\\chromedriver.exe");
+		System.setProperty("webdriver.chrome.driver", "C:\\Users\\rdpsi\\Desktop\\se\\chromedriver.exe");
 		// options.addArguments("--headless");
 		// options.addArguments("--start-maximized");
 		options.addArguments("--" + runType);
@@ -259,6 +259,7 @@ public class RsiChromeTester {
 			} catch (NoSuchElementException nse) {
 				// we will try one more time by checking all elements of the field type with
 				// getText() of fieldName.
+				System.out.println("NoSuchElementException ACTION: Trying again");
 				if (!RsiTestingHelper.checkEmpty(fieldType) && !RsiTestingHelper.checkEmpty(fieldName)) {
 					List<WebElement> elements = driver.findElements(By.tagName(fieldType));
 					for (WebElement e : elements) {
@@ -449,6 +450,8 @@ public class RsiChromeTester {
 						element = driver.findElement(By.id(fieldName));
 					} catch (NoSuchElementException nse) {
 						element = fetchWebElement(fieldCategory, null, elementXPath);
+					} finally {
+						recheckCounter++;
 					}
 				}
 			} catch (NoSuchElementException nse) {

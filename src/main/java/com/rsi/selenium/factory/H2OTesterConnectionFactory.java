@@ -39,7 +39,7 @@ public class H2OTesterConnectionFactory {
 				CustomCommand command = new CustomCommand(rs.getInt("id"), rs.getString("name"),
 						rs.getString("command"),
 						rs.getString("parameters").substring(1, rs.getString("parameters").length() - 1).split(","));
-				logger.debug("Custom COmmand is " + command.toString() + " now adding it to the environment");
+				logger.debug("Custom Command is " + command.toString() + " now adding it to the environment");
 				commandsForEnvironment.add(command);
 			}
 		} catch (SQLException sqle) {
@@ -72,7 +72,12 @@ public class H2OTesterConnectionFactory {
 				ResourceBundle s = ResourceBundle.getBundle("dbconfig");
 
 				dbInstance = DriverManager.getConnection(
-						s.getString("DBURL") + "?user=" + s.getString("DBUSER") + "&password=" + s.getString("DBPASS"));
+						"jdbc:mysql://localhost:3306/selenium_rails?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
+								+ "&user=" + "sparsha" + "&password=" + "root");
+
+				// dbInstance = DriverManager.getConnection(
+				// s.getString("DBURL") + "?user=" + s.getString("DBUSER") + "&password=" +
+				// s.getString("DBPASS"));
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}

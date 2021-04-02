@@ -40,11 +40,13 @@ public class RsitesterMain {
 		ResultSet scheduledSet = null;
 
 		String chromeMode = args.length == 0 ? "start-maximized" : args[0];
-
+		;
 		// STEP 2: Read the scheduler table.
 		try {
 			stmt = conn.createStatement();
 			int schedulerID = args.length == 2 ? Integer.parseInt(args[1]) : -1;
+
+			System.out.println("Scheduler ID = " + schedulerID);
 			// Search based on schedulerID
 			scheduledSet = findResultFromSchedulerID(conn, stmt, schedulerID);
 
@@ -281,6 +283,7 @@ public class RsitesterMain {
 					}
 					sleepIfInstructedTo(curCase.getSleeps());
 				} catch (NoSuchElementException nse) {
+					logErrorMessage("INSPECT: Failed because no such element exists");
 					logErrorMessage(nse.getMessage());
 					caseSuccess = false;
 				} catch (InterruptedException ie) {
@@ -295,6 +298,7 @@ public class RsitesterMain {
 							curCase.getBaseUrl(), curCase.getDescription(), currentTestSequence);
 					sleepIfInstructedTo(curCase.getSleeps());
 				} catch (NoSuchElementException nse) {
+					logErrorMessage("ACTION: Failed because no such element exists");
 					logErrorMessage(nse.getMessage());
 					caseSuccess = false;
 				} catch (InterruptedException ie) {

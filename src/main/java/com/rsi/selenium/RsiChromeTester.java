@@ -28,7 +28,7 @@ public class RsiChromeTester {
 	}
 
 	public RsiChromeTester(String runType) {
-		System.setProperty("webdriver.chrome.driver", "c:\\java_libs\\chromedriver.exe");
+		System.setProperty("webdriver.chrome.driver", "C:\\Users\\rdpsi\\Desktop\\se\\chromedriver.exe");
 		// options.addArguments("--headless");
 		// options.addArguments("--start-maximized");
 		options.addArguments("--" + runType);
@@ -259,6 +259,7 @@ public class RsiChromeTester {
 			} catch (NoSuchElementException nse) {
 				// we will try one more time by checking all elements of the field type with
 				// getText() of fieldName.
+				System.out.println("NoSuchElementException ACTION: Trying again");
 				if (!RsiTestingHelper.checkEmpty(fieldType) && !RsiTestingHelper.checkEmpty(fieldName)) {
 					List<WebElement> elements = driver.findElements(By.tagName(fieldType));
 					for (WebElement e : elements) {
@@ -371,8 +372,10 @@ public class RsiChromeTester {
 		String currentPageUrl = driver.getCurrentUrl();
 		String description = initialDescription;
 		try {
-			if (!currentPageUrl.equalsIgnoreCase(base_url) && currentTestSequence == 1)
-				driver.get(base_url);
+			if (!RsiTestingHelper.checkEmpty(base_url)) {
+				if (!currentPageUrl.equalsIgnoreCase(base_url) && currentTestSequence == 1)
+					driver.get(base_url);
+			}
 
 			element = fetchWebElement("INPUT", fieldName, xpath);
 			String isReadOnly = element.getAttribute("readonly");
@@ -419,35 +422,49 @@ public class RsiChromeTester {
 	private WebElement fetchWebElement(String fieldCategory, String fieldName, String xpath)
 			throws NoSuchElementException, InterruptedException {
 		WebElement element = null;
-		String[] xpathColl = null;
+
+		String elementXPath = xpath;
 
 		if (hasSwitch(xpath)) {
+			String[] xpathColl = null;
 			xpathColl = xpath.split("<switch>");
-			// TimeUnit.SECONDS.sleep(2);
-			driver.switchTo().frame(driver.findElement(By.xpath(xpathColl[0])));
-		}
-		if ((fieldName == null || fieldName.trim().length() == 0)) {
-			if (hasSwitch(xpath)) {
-				element = driver.findElement(By.xpath(xpathColl[1]));
-			} else {
-				element = driver.findElement(By.xpath(xpath));
+
+			for (Integer i = 0; i < xpathColl.length - 1; i++) {
+				driver.switchTo().frame(driver.findElement(By.xpath(xpathColl[i])));
 			}
-		} else {
-			// SAMEER - 09212020 changed By.id to By.name. In addition to this change, we
-			// also need to make sure if this next line fails it is handled by some other
-			// means
+
+			elementXPath = xpathColl[xpathColl.length - 1];
+		}
+
+		Integer recheckCounter = 0;
+
+		while (element == null && recheckCounter <= 2) {
 			try {
-				element = driver.findElement(By.id(fieldName));
+				if ((fieldName == null || fieldName.trim().length() == 0)) {
+					element = driver.findElement(By.xpath(elementXPath));
+				} else {
+					// SAMEER - 09212020 changed By.id to By.name. In addition to this change, we
+					// also need to make sure if this next line fails it is handled by some other
+					// means
+					try {
+						element = driver.findElement(By.id(fieldName));
+					} catch (NoSuchElementException nse) {
+						element = fetchWebElement(fieldCategory, null, elementXPath);
+					} finally {
+						recheckCounter++;
+					}
+				}
 			} catch (NoSuchElementException nse) {
-				// try {
-				// element = driver.findElement(By.name(fieldName));
-				// } catch (Exception e) {
-				// logger.error("Could not find the element with the fieldName " + fieldName + "
-				// now check for XPath by calling the same method");
-				element = fetchWebElement(fieldCategory, null, xpath);
-				// }
+				try {
+					TimeUnit.SECONDS.sleep(2);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} finally {
+					recheckCounter++;
+				}
 			}
 		}
+
 		return element;
 	}
 

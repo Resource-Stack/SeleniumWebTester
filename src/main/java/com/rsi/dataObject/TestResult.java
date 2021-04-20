@@ -3,6 +3,15 @@ package com.rsi.dataObject;
 public class TestResult {
     private String status;
     private String description;
+    private Integer nextCaseId = -1;
+
+    public Integer getNextCaseId() {
+        return nextCaseId;
+    }
+
+    public void setNextCaseId(Integer caseId) {
+        nextCaseId = caseId;
+    }
 
     public String getStatus() {
         return status;

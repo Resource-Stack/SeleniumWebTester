@@ -2,6 +2,9 @@ package com.rsi.dataObject;
 
 import java.util.ArrayList;
 
+import com.rsi.selenium.RsiChromeTester;
+import com.rsi.utils.RsiTestingHelper;
+
 public class TestCase {
     private Integer id;
     private String field_name;
@@ -18,6 +21,56 @@ public class TestCase {
     private String need_screenshot;
     private String enter_action;
     private Integer sequence;
+    private Boolean javascript_conditional_enabled;
+    private String javascript_conditional;
+    private ArrayList<Integer> accepted_case_ids;
+    private ArrayList<Integer> rejected_case_ids;
+
+    public ArrayList<Integer> getAcceptedCaseIds() {
+        return accepted_case_ids;
+    }
+
+    public void setAcceptedCaseIds(String value) {
+        String[] splits = value.replaceAll("\\[|\\]| ", "").split(",", -1);
+        ArrayList<Integer> arrayList = new ArrayList<Integer>();
+        for (String fav : splits) {
+            if (!RsiTestingHelper.checkEmpty(fav)) {
+                arrayList.add(Integer.parseInt(fav.trim()));
+            }
+        }
+        accepted_case_ids = arrayList;
+    }
+
+    public ArrayList<Integer> getRejectedCaseIds() {
+        return rejected_case_ids;
+    }
+
+    public void setRejectedCaseIds(String value) {
+        String[] splits = value.replaceAll("\\[|\\]| ", "").split(",");
+        ArrayList<Integer> arrayList = new ArrayList<Integer>();
+        for (String fav : splits) {
+            if (!RsiTestingHelper.checkEmpty(fav)) {
+                arrayList.add(Integer.parseInt(fav.trim()));
+            }
+        }
+        rejected_case_ids = arrayList;
+    }
+
+    public Boolean getJavascriptConditionalEnabled() {
+        return javascript_conditional_enabled;
+    }
+
+    public void setJavascriptConditionalEnabled(Boolean value) {
+        javascript_conditional_enabled = value;
+    }
+
+    public String getJavascriptConditional() {
+        return javascript_conditional;
+    }
+
+    public void setJavascriptConditional(String value) {
+        javascript_conditional = value;
+    }
 
     public Integer getId() {
         return id;

@@ -6,10 +6,12 @@ import com.rsi.dataObject.TestCase;
 import com.rsi.dataObject.TestResult;
 import com.rsi.selenium.factory.H2OTesterConnectionFactory;
 import com.rsi.utils.EmailManagementUtility;
+import com.rsi.utils.RsiTestingHelper;
 
 import org.apache.log4j.Logger;
 import org.apache.sling.commons.json.JSONException;
 import org.apache.sling.commons.json.JSONObject;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 
 import java.io.BufferedReader;
@@ -17,16 +19,18 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class RsitesterMain {
 	final static Logger logger = Logger.getLogger(RsitesterMain.class);
+	static H2OApplication curApp = null;
 
 	// ARGS: mode ["headless"/"start-maximized"], schedulerID
 	public static void main(String[] args) {
-		H2OApplication curApp = null;
 
 		// STEP 1: GET Database Connection
 		H2OTesterConnectionFactory appFactory = H2OTesterConnectionFactory.getInstance();
@@ -36,11 +40,13 @@ public class RsitesterMain {
 		ResultSet scheduledSet = null;
 
 		String chromeMode = args.length == 0 ? "start-maximized" : args[0];
-
+		;
 		// STEP 2: Read the scheduler table.
 		try {
 			stmt = conn.createStatement();
 			int schedulerID = args.length == 2 ? Integer.parseInt(args[1]) : -1;
+
+			System.out.println("Scheduler ID = " + schedulerID);
 			// Search based on schedulerID
 			scheduledSet = findResultFromSchedulerID(conn, stmt, schedulerID);
 
@@ -48,6 +54,7 @@ public class RsitesterMain {
 				int currentSchedulerId = scheduledSet.getInt("id");
 				int currentSuiteId = scheduledSet.getInt("test_suite_id");
 				int numberOfTimesToRun = scheduledSet.getInt("number_of_times");
+				Boolean flowNotCreated = scheduledSet.getBoolean("flow_not_defined");
 
 				if (numberOfTimesToRun > 1) {
 					chromeMode = "headless";
@@ -73,7 +80,7 @@ public class RsitesterMain {
 				}
 
 				PreparedStatement pstmt = conn.prepareStatement(
-						"SELECT tc.id as id, tc.field_name as field_name, tc.field_type as field_type, tc.read_element as read_element, tc.xpath as xpath, tc.input_value as input_value, tc.string as string, tc.action as action, ts.base_url as base_url, tc.action_url as action_url, tc.sleeps as sleeps, cs.sequence as sequence, tc.new_tab as new_tab, tc.need_screenshot as need_screenshot, tc.description as description, tc.enter_action as enter_action FROM test_cases tc, case_suites cs, test_suites ts WHERE cs.test_case_id = tc.id AND ts.id = cs.test_suite_id AND cs.test_suite_id = ? ORDER BY cs.sequence");
+						"SELECT tc.id as id, tc.field_name as field_name, tc.javascript_conditional_enabled, tc.javascript_conditional, tc.field_type as field_type, tc.read_element as read_element, tc.xpath as xpath, tc.input_value as input_value, tc.string as string, tc.action as action, ts.base_url as base_url, tc.action_url as action_url, tc.sleeps as sleeps, cs.sequence as sequence, cs.accepted_case_ids, cs.rejected_case_ids, tc.new_tab as new_tab, tc.need_screenshot as need_screenshot, tc.description as description, tc.enter_action as enter_action FROM test_cases tc, case_suites cs, test_suites ts WHERE cs.test_case_id = tc.id AND ts.id = cs.test_suite_id AND cs.test_suite_id = ? ORDER BY cs.sequence");
 
 				pstmt.setInt(1, scheduledSet.getInt("test_suite_id"));
 				boolean casesRetrieved = pstmt.execute();
@@ -87,6 +94,11 @@ public class RsitesterMain {
 				while (testCaseResult != null && testCaseResult.next()) {
 					TestCase testCase = new TestCase();
 					testCase.setId(testCaseResult.getInt("id"));
+					testCase.setJavascriptConditionalEnabled(
+							testCaseResult.getBoolean("javascript_conditional_enabled"));
+					testCase.setJavascriptConditional(testCaseResult.getString("javascript_conditional"));
+					testCase.setAcceptedCaseIds(testCaseResult.getString("accepted_case_ids"));
+					testCase.setRejectedCaseIds(testCaseResult.getString("rejected_case_ids"));
 					testCase.setfieldName(testCaseResult.getString("field_name"));
 					testCase.setfieldType(testCaseResult.getString("field_type"));
 					testCase.setReadElement(testCaseResult.getString("read_element"));
@@ -108,7 +120,6 @@ public class RsitesterMain {
 
 				ArrayList<String> statuses = new ArrayList<String>();
 				final String chromiumMode = chromeMode;
-				final H2OApplication app = curApp;
 				final ResultSet rs = scheduledSet;
 				ArrayList<RsiChromeTester> chromeTesters = new ArrayList<RsiChromeTester>();
 				final ArrayList<TestCase> testCaseList = testCases;
@@ -125,12 +136,12 @@ public class RsitesterMain {
 								chromeTesters.add(chromeTester);
 
 								try {
-									if (app.getLoginRequired()) {
-										chromeTester.loginToApp(app.getUrl(), app.getLoginField(),
-												app.getPasswordField(), app.getActionButton(), app.getLoginName(),
-												app.getLoginPwd(), "success_field");
+									if (curApp.getLoginRequired()) {
+										chromeTester.loginToApp(curApp.getUrl(), curApp.getLoginField(),
+												curApp.getPasswordField(), curApp.getActionButton(),
+												curApp.getLoginName(), curApp.getLoginPwd(), "success_field");
 									} else {
-										chromeTester.goToLandingPage(app.getUrl());
+										chromeTester.goToLandingPage(curApp.getUrl());
 									}
 								} catch (NoSuchElementException nse) {
 									logErrorMessage("Element not found Error [ " + nse.getMessage() + " ]");
@@ -147,155 +158,49 @@ public class RsitesterMain {
 										+ rs.getInt("test_suite_id") + " ]");
 
 								if (casesRetrieved) {
+									if (flowNotCreated) {
+										for (int j = 0; j < testCaseList.size(); j++) {
+											TestCase curCase = testCaseList.get(j);
 
-									for (int j = 0; j < testCaseList.size(); j++) {
-										TestCase curCase = testCaseList.get(j);
-										Boolean caseSuccess = true;
-										int currentTestCaseId = curCase.getId();
-										int currentTestSequence = curCase.getSequence();
-										logDebugMessage("Now running test case [ " + currentTestCaseId
-												+ " ], for field name [ " + curCase.getFieldName()
-												+ " ] and the sequence is [" + currentTestSequence + "]");
+											res = executeTestCase(conn, chromeTester, curCase, resultSuiteId,
+													currentSchedulerId);
+											statuses.add(res.getStatus());
+										}
+									} else {
+										if (testCaseList.size() > 0) {
+											/*
+											 * First test case to begin, can be something defaulted (assumed to be first
+											 * in the sequence)
+											 */
+											Boolean firstCase = true;
+											TestCase curCase = testCaseList.get(0);
+											while (curCase != null) {
+												if (firstCase) {
+													firstCase = false;
+												} else {
+													Integer nextCaseId = res.getNextCaseId();
 
-										String testCaseType = identifyTestCase(curCase.getfieldType(),
-												curCase.getInputValue(), curCase.getAction());
-
-										logDebugMessage(
-												"TestCaseId " + currentTestCaseId + " identified as " + testCaseType);
-
-										if (testCaseType == "INSPECT") {
-											try {
-												res = chromeTester.testPageElement(curCase.getFieldName(),
-														curCase.getXPath(), curCase.getfieldType(),
-														curCase.getReadElement(), curCase.getDescription(),
-														currentTestSequence);
-												if (res.getStatus().equalsIgnoreCase("Failure")) {
-													caseSuccess = false;
-												}
-												sleepIfInstructedTo(curCase.getSleeps());
-											} catch (NoSuchElementException nse) {
-												logErrorMessage(nse.getMessage());
-												caseSuccess = false;
-											} catch (InterruptedException ie) {
-												logErrorMessage(ie.getMessage());
-												caseSuccess = false;
-												ie.printStackTrace();
-											}
-										} else if (testCaseType == "ACTION") {
-											try {
-												res = chromeTester.actionPageElement(curCase.getFieldName(),
-														curCase.getfieldType(), curCase.getXPath(), curCase.getAction(),
-														curCase.getActionUrl(), curCase.getInputValue(),
-														curCase.getBaseUrl(), curCase.getDescription(),
-														currentTestSequence);
-												sleepIfInstructedTo(curCase.getSleeps());
-											} catch (NoSuchElementException nse) {
-												logErrorMessage(nse.getMessage());
-												caseSuccess = false;
-											} catch (InterruptedException ie) {
-												logErrorMessage(ie.getMessage());
-												caseSuccess = false;
-												ie.printStackTrace();
-											}
-										} else if (testCaseType == "INPUT") {
-											try {
-												res = chromeTester.inputPageElement(curCase.getFieldName(),
-														curCase.getInputValue(), curCase.getXPath(),
-														curCase.getBaseUrl(), curCase.getDescription(),
-														curCase.getEnterAction(), currentTestSequence);
-												sleepIfInstructedTo(curCase.getSleeps());
-											} catch (NoSuchElementException nse) {
-												logErrorMessage(
-														"Error when handling Input type case... " + nse.getMessage());
-												caseSuccess = false;
-											} catch (InterruptedException ie) {
-												logErrorMessage(ie.getMessage());
-												caseSuccess = false;
-											}
-										} else if (testCaseType == "CUSTOM") {
-											// TODO now try to instantiate custom application code to execute backend
-											// methods that could not be performed from frontend. such as cleanup an
-											// object.
-											// Now assume that a custom class has been implemented for this application.
-											logInfoMessage("Now inside custom code.");
-											String commandName = curCase.getFieldName().substring(1,
-													curCase.getFieldName().length() - 1);
-											// CommonHealthCore_Dev chcDev = new CommonHealthCore_Dev(app, conn);
-											for (CustomCommand command : app.getCustomCommands()) {
-												if (commandName.equalsIgnoreCase(command.getCustomCommandName())) {
-													logDebugMessage("Found the command to run " + command.toString());
-													try {
-														String all_params = "";
-														all_params = buildParamString(command.getParams(),
-																curCase.getReadElement());
-														Process p = Runtime.getRuntime()
-																.exec(command.getCustomCommand() + " " + all_params);
-														if (!p.waitFor(1, TimeUnit.MINUTES)) {
-															InputStreamReader ssReader = new InputStreamReader(
-																	p.getInputStream());
-
-															BufferedReader reader = new BufferedReader(ssReader);
-															StringBuffer sb = new StringBuffer();
-															String str;
-															while ((str = reader.readLine()) != null) {
-																sb.append(str);
+													curCase = null;
+													if (nextCaseId > 0) {
+														for (int j = 0; j < testCaseList.size(); j++) {
+															TestCase checkCase = testCaseList.get(j);
+															Integer caseId = checkCase.getId();
+															if (caseId.equals(nextCaseId)) {
+																curCase = checkCase;
+																break;
 															}
-															if (com.rsi.utils.RsiTestingHelper
-																	.checkEmpty(sb.toString())) {
-																res.setStatus("Failure");
-																caseSuccess = true;
-															} else {
-																logInfoMessage("Return from Custom Script [ "
-																		+ sb.toString() + " ]");
-																res.setStatus("Success");
-															}
-														} else {
-															p.destroy(); // consider using destroyForcibly instead
 														}
-													} catch (IOException ioe) {
-														res.setStatus("Failure");
-														caseSuccess = false;
-													} catch (RuntimeException re) {
-														res.setStatus("Failure");
-														caseSuccess = false;
-														logErrorMessage("re.getMessage()");
-													} catch (InterruptedException ine) {
-														res.setStatus("Failure");
-														caseSuccess = false;
-														logErrorMessage("ine.getMessage()");
 													}
 												}
 
+												if (curCase != null) {
+													res = executeTestCase(conn, chromeTester, curCase, resultSuiteId,
+															currentSchedulerId);
+
+													statuses.add(res.getStatus());
+												}
 											}
 										}
-										if (res.getStatus().equalsIgnoreCase("Failure")) {
-											caseSuccess = false;
-										}
-										Integer resultCaseId = createNewResultCase(conn, currentTestCaseId,
-												currentSchedulerId, resultSuiteId, res.getDescription(),
-												com.rsi.utils.RsiTestingHelper.returmTimeStamp(),
-												com.rsi.utils.RsiTestingHelper.returmTimeStamp(), caseSuccess);
-
-										String need_screenshot = curCase.getNeedScreenshot();
-										if (!caseSuccess
-												|| !com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
-											if (!caseSuccess || need_screenshot.equalsIgnoreCase("1")) {
-												chromeTester.takeScreenshot(conn, resultCaseId);
-											}
-										}
-
-										logDebugMessage("Status returned is [ " + res.getStatus() + " ]");
-										if (!com.rsi.utils.RsiTestingHelper.checkEmpty(curCase.getNewTab())
-												&& curCase.getNewTab().equalsIgnoreCase("1")) {
-											chromeTester.switchToNewTab();
-											try {
-												TimeUnit.SECONDS.sleep(5);
-											} catch (InterruptedException e) {
-												e.printStackTrace();
-											}
-										}
-
-										statuses.add(res.getStatus());
 									}
 
 									RsitesterMain.updateResultSuite(conn, resultSuiteId,
@@ -325,7 +230,7 @@ public class RsitesterMain {
 							t.getDriver().quit();
 					});
 					// send out an email to the recipient of this environment.
-					EmailManagementUtility.sendEmail(app, currentSchedulerId, conn);
+					EmailManagementUtility.sendEmail(curApp, currentSchedulerId, conn);
 				}
 
 			}
@@ -353,11 +258,170 @@ public class RsitesterMain {
 		}
 	}
 
+	private static TestResult executeTestCase(Connection conn, RsiChromeTester chromeTester, TestCase curCase,
+			int resultSuiteId, int currentSchedulerId) {
+		TestResult res = new TestResult();
+		Boolean caseSuccess = true;
+		try {
+			int currentTestCaseId = curCase.getId();
+			int currentTestSequence = curCase.getSequence();
+			logDebugMessage("Now running test case [ " + currentTestCaseId + " ], for field name [ "
+					+ curCase.getFieldName() + " ] and the sequence is [" + currentTestSequence + "]");
+
+			String testCaseType = identifyTestCase(curCase.getfieldType(), curCase.getInputValue(),
+					curCase.getAction());
+
+			logDebugMessage("TestCaseId " + currentTestCaseId + " identified as " + testCaseType);
+
+			if (testCaseType == "INSPECT") {
+				try {
+					res = chromeTester.testPageElement(curCase.getFieldName(), curCase.getXPath(),
+							curCase.getfieldType(), curCase.getReadElement(), curCase.getDescription(),
+							currentTestSequence);
+					if (res.getStatus().equalsIgnoreCase("Failure")) {
+						caseSuccess = false;
+					}
+					sleepIfInstructedTo(curCase.getSleeps());
+				} catch (NoSuchElementException nse) {
+					logErrorMessage("INSPECT: Failed because no such element exists");
+					logErrorMessage(nse.getMessage());
+					caseSuccess = false;
+				} catch (InterruptedException ie) {
+					logErrorMessage(ie.getMessage());
+					caseSuccess = false;
+					ie.printStackTrace();
+				}
+			} else if (testCaseType == "ACTION") {
+				try {
+					res = chromeTester.actionPageElement(curCase.getFieldName(), curCase.getfieldType(),
+							curCase.getXPath(), curCase.getAction(), curCase.getActionUrl(), curCase.getInputValue(),
+							curCase.getBaseUrl(), curCase.getDescription(), currentTestSequence);
+					sleepIfInstructedTo(curCase.getSleeps());
+				} catch (NoSuchElementException nse) {
+					logErrorMessage("ACTION: Failed because no such element exists");
+					logErrorMessage(nse.getMessage());
+					caseSuccess = false;
+				} catch (InterruptedException ie) {
+					logErrorMessage(ie.getMessage());
+					caseSuccess = false;
+					ie.printStackTrace();
+				}
+			} else if (testCaseType == "INPUT") {
+				try {
+					res = chromeTester.inputPageElement(curCase.getFieldName(), curCase.getInputValue(),
+							curCase.getXPath(), curCase.getBaseUrl(), curCase.getDescription(),
+							curCase.getEnterAction(), currentTestSequence);
+					sleepIfInstructedTo(curCase.getSleeps());
+				} catch (NoSuchElementException nse) {
+					logErrorMessage("Error when handling Input type case... " + nse.getMessage());
+					caseSuccess = false;
+				} catch (InterruptedException ie) {
+					logErrorMessage(ie.getMessage());
+					caseSuccess = false;
+				}
+			} else if (testCaseType == "CUSTOM") {
+
+				/*
+				 * TODO now try to instantiate custom application code to execute backend
+				 * methods that could not be performed from frontend. such as cleanup an object.
+				 * Now assume that a custom class has been implemented for this application.
+				 */
+
+				logInfoMessage("Now inside custom code.");
+				String commandName = curCase.getFieldName().substring(1, curCase.getFieldName().length() - 1);
+				// CommonHealthCore_Dev chcDev = new CommonHealthCore_Dev(app, conn);
+				for (CustomCommand command : curApp.getCustomCommands()) {
+					if (commandName.equalsIgnoreCase(command.getCustomCommandName())) {
+						logDebugMessage("Found the command to run " + command.toString());
+						try {
+							String all_params = "";
+							all_params = buildParamString(command.getParams(), curCase.getReadElement());
+							Process p = Runtime.getRuntime().exec(command.getCustomCommand() + " " + all_params);
+							if (!p.waitFor(1, TimeUnit.MINUTES)) {
+								InputStreamReader ssReader = new InputStreamReader(p.getInputStream());
+
+								BufferedReader reader = new BufferedReader(ssReader);
+								StringBuffer sb = new StringBuffer();
+								String str;
+								while ((str = reader.readLine()) != null) {
+									sb.append(str);
+								}
+								if (com.rsi.utils.RsiTestingHelper.checkEmpty(sb.toString())) {
+									res.setStatus("Failure");
+									caseSuccess = true;
+								} else {
+									logInfoMessage("Return from Custom Script [ " + sb.toString() + " ]");
+									res.setStatus("Success");
+								}
+							} else {
+								p.destroy(); // consider using destroyForcibly instead
+							}
+						} catch (IOException ioe) {
+							res.setStatus("Failure");
+							caseSuccess = false;
+						} catch (RuntimeException re) {
+							res.setStatus("Failure");
+							caseSuccess = false;
+							logErrorMessage("re.getMessage()");
+						} catch (InterruptedException ine) {
+							res.setStatus("Failure");
+							caseSuccess = false;
+							logErrorMessage("ine.getMessage()");
+						}
+					}
+
+				}
+			}
+			if (res.getStatus().equalsIgnoreCase("Failure")) {
+				caseSuccess = false;
+			}
+			Integer resultCaseId = createNewResultCase(conn, currentTestCaseId, currentSchedulerId, resultSuiteId,
+					res.getDescription(), com.rsi.utils.RsiTestingHelper.returmTimeStamp(),
+					com.rsi.utils.RsiTestingHelper.returmTimeStamp(), caseSuccess);
+
+			String need_screenshot = curCase.getNeedScreenshot();
+			if (!caseSuccess || !com.rsi.utils.RsiTestingHelper.checkEmpty(need_screenshot)) {
+				if (!caseSuccess || need_screenshot.equalsIgnoreCase("1")) {
+					chromeTester.takeScreenshot(conn, resultCaseId);
+				}
+			}
+
+			logDebugMessage("Status returned is [ " + res.getStatus() + " ]");
+			if (!com.rsi.utils.RsiTestingHelper.checkEmpty(curCase.getNewTab())
+					&& curCase.getNewTab().equalsIgnoreCase("1")) {
+				chromeTester.switchToNewTab();
+				try {
+					TimeUnit.SECONDS.sleep(5);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+
+		String javascriptConditional = curCase.getJavascriptConditional();
+
+		Boolean javascriptConditionalAccepted = true;
+		if (curCase.getJavascriptConditionalEnabled() && !RsiTestingHelper.checkEmpty(javascriptConditional)) {
+			JavascriptExecutor js = (JavascriptExecutor) chromeTester.getDriver();
+			Object scriptResult = js.executeScript(javascriptConditional);
+			if (scriptResult != null)
+				javascriptConditionalAccepted = ((Boolean) scriptResult).booleanValue();
+		}
+		ArrayList<Integer> caseIds = javascriptConditionalAccepted ? curCase.getAcceptedCaseIds()
+				: curCase.getRejectedCaseIds();
+		Integer caseId = caseIds.size() > 0 ? caseIds.get(0) : -1;
+		res.setNextCaseId(caseId);
+
+		return res;
+	}
+
 	private static ResultSet findResultFromSchedulerID(Connection conn, Statement stmt, Integer schedulerID)
 			throws SQLException {
 		ResultSet rs = null;
 		rs = stmt.executeQuery(
-				"SELECT s.id id, s.test_suite_id, s.scheduled_date, s.number_of_times, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id AND s.id = '"
+				"SELECT s.id id, s.test_suite_id, ISNULL(t.flow_state) as flow_not_defined, s.scheduled_date, s.number_of_times, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id AND s.id = '"
 						+ schedulerID.toString() + "' ORDER BY s.updated_at DESC LIMIT 1");
 
 		return rs;

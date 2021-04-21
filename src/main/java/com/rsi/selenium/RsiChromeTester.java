@@ -29,11 +29,8 @@ public class RsiChromeTester {
 
 	public RsiChromeTester(String runType) {
 		System.setProperty("webdriver.chrome.driver", "C:\\Users\\rdpsi\\Desktop\\se\\chromedriver.exe");
-		// options.addArguments("--headless");
-		// options.addArguments("--start-maximized");
 		options.addArguments("--" + runType);
 		driver = new ChromeDriver(options);
-
 	}
 
 	public TestResult loginToApp(String url_to_test, String userNameField, String passwordField, String btnField,

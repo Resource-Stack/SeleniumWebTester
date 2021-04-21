@@ -20,6 +20,7 @@ public class TestCase {
     private String description;
     private String need_screenshot;
     private String enter_action;
+    private Integer custom_command_id;
     private Integer sequence;
     private Boolean javascript_conditional_enabled;
     private String javascript_conditional;
@@ -70,6 +71,14 @@ public class TestCase {
 
     public void setJavascriptConditional(String value) {
         javascript_conditional = value;
+    }
+
+    public Integer getCustomCommandID() {
+        return custom_command_id;
+    }
+
+    public void setCustomCommandID(Integer value) {
+        custom_command_id = value;
     }
 
     public Integer getId() {

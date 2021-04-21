@@ -36,10 +36,14 @@ public class H2OTesterConnectionFactory {
 					"SELECT  id, name, command, parameters FROM custom_commands where environment_id = " + id);
 			while (rs.next()) {
 				logger.debug("Found the record for a custom command " + rs.getInt("id"));
+				String[] parameters = new String[] {};
+
+				String parms = rs.getString("parameters");
+				if (parms != null && parms.trim().length() > 0) {
+					parameters = parms.substring(1, parms.length() - 1).split(",");
+				}
 				CustomCommand command = new CustomCommand(rs.getInt("id"), rs.getString("name"),
-						rs.getString("command"),
-						rs.getString("parameters").substring(1, rs.getString("parameters").length() - 1).split(","));
-				logger.debug("Custom Command is " + command.toString() + " now adding it to the environment");
+						rs.getString("command"), parameters);
 				commandsForEnvironment.add(command);
 			}
 		} catch (SQLException sqle) {
@@ -65,19 +69,11 @@ public class H2OTesterConnectionFactory {
 	public Connection getDatabaseConnection() {
 		if (dbInstance == null) {
 			try {
-				// dbInstance =
-				// DriverManager.getConnection("jdbc:mysql://192.168.56.101/healthix_development?"
-				// +
-				// "user=healthix&password=rsi1111");
 				ResourceBundle s = ResourceBundle.getBundle("dbconfig");
 
 				dbInstance = DriverManager.getConnection(
-						"jdbc:mysql://localhost:3306/selenium_rails?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
-								+ "&user=" + "sparsha" + "&password=" + "root");
+						s.getString("DBURL") + "?user=" + s.getString("DBUSER") + "&password=" + s.getString("DBPASS"));
 
-				// dbInstance = DriverManager.getConnection(
-				// s.getString("DBURL") + "?user=" + s.getString("DBUSER") + "&password=" +
-				// s.getString("DBPASS"));
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}

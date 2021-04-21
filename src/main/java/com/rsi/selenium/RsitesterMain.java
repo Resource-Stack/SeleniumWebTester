@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +47,7 @@ public class RsitesterMain {
 			stmt = conn.createStatement();
 			int schedulerID = args.length == 2 ? Integer.parseInt(args[1]) : -1;
 
+			schedulerID = 14;
 			System.out.println("Scheduler ID = " + schedulerID);
 			// Search based on schedulerID
 			scheduledSet = findResultFromSchedulerID(conn, stmt, schedulerID);
@@ -80,7 +82,7 @@ public class RsitesterMain {
 				}
 
 				PreparedStatement pstmt = conn.prepareStatement(
-						"SELECT tc.id as id, tc.field_name as field_name, tc.javascript_conditional_enabled, tc.javascript_conditional, tc.field_type as field_type, tc.read_element as read_element, tc.xpath as xpath, tc.input_value as input_value, tc.string as string, tc.action as action, ts.base_url as base_url, tc.action_url as action_url, tc.sleeps as sleeps, cs.sequence as sequence, cs.accepted_case_ids, cs.rejected_case_ids, tc.new_tab as new_tab, tc.need_screenshot as need_screenshot, tc.description as description, tc.enter_action as enter_action FROM test_cases tc, case_suites cs, test_suites ts WHERE cs.test_case_id = tc.id AND ts.id = cs.test_suite_id AND cs.test_suite_id = ? ORDER BY cs.sequence");
+						"SELECT tc.id as id, tc.field_name as field_name, tc.javascript_conditional_enabled, tc.javascript_conditional, tc.field_type as field_type, tc.read_element as read_element, tc.xpath as xpath, tc.input_value as input_value, tc.string as string, tc.action as action, ts.base_url as base_url, tc.action_url as action_url, tc.sleeps as sleeps, tc.custom_command_id as custom_command_id, cs.sequence as sequence, cs.accepted_case_ids, cs.rejected_case_ids, tc.new_tab as new_tab, tc.need_screenshot as need_screenshot, tc.description as description, tc.enter_action as enter_action FROM test_cases tc, case_suites cs, test_suites ts WHERE cs.test_case_id = tc.id AND ts.id = cs.test_suite_id AND cs.test_suite_id = ? ORDER BY cs.sequence");
 
 				pstmt.setInt(1, scheduledSet.getInt("test_suite_id"));
 				boolean casesRetrieved = pstmt.execute();
@@ -102,6 +104,7 @@ public class RsitesterMain {
 					testCase.setfieldName(testCaseResult.getString("field_name"));
 					testCase.setfieldType(testCaseResult.getString("field_type"));
 					testCase.setReadElement(testCaseResult.getString("read_element"));
+					testCase.setCustomCommandID(testCaseResult.getInt("custom_command_id"));
 					testCase.setXPath(testCaseResult.getString("xpath"));
 					testCase.setInputValue(testCaseResult.getString("input_value"));
 					testCase.setAction(testCaseResult.getString("action"));
@@ -173,7 +176,9 @@ public class RsitesterMain {
 											 * in the sequence)
 											 */
 											Boolean firstCase = true;
-											TestCase curCase = testCaseList.get(0);
+											Optional<TestCase> optCase = testCaseList.stream()
+													.filter((tc) -> tc.getSequence() == 0).findFirst();
+											TestCase curCase = optCase == null ? testCaseList.get(0) : optCase.get();
 											while (curCase != null) {
 												if (firstCase) {
 													firstCase = false;
@@ -320,7 +325,6 @@ public class RsitesterMain {
 					caseSuccess = false;
 				}
 			} else if (testCaseType == "CUSTOM") {
-
 				/*
 				 * TODO now try to instantiate custom application code to execute backend
 				 * methods that could not be performed from frontend. such as cleanup an object.
@@ -328,10 +332,11 @@ public class RsitesterMain {
 				 */
 
 				logInfoMessage("Now inside custom code.");
-				String commandName = curCase.getFieldName().substring(1, curCase.getFieldName().length() - 1);
-				// CommonHealthCore_Dev chcDev = new CommonHealthCore_Dev(app, conn);
+
+				Integer commandID = curCase.getCustomCommandID();
+
 				for (CustomCommand command : curApp.getCustomCommands()) {
-					if (commandName.equalsIgnoreCase(command.getCustomCommandName())) {
+					if (commandID == command.getId()) {
 						logDebugMessage("Found the command to run " + command.toString());
 						try {
 							String all_params = "";

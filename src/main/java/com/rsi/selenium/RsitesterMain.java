@@ -47,7 +47,6 @@ public class RsitesterMain {
 			stmt = conn.createStatement();
 			int schedulerID = args.length == 2 ? Integer.parseInt(args[1]) : -1;
 
-			schedulerID = 14;
 			System.out.println("Scheduler ID = " + schedulerID);
 			// Search based on schedulerID
 			scheduledSet = findResultFromSchedulerID(conn, stmt, schedulerID);

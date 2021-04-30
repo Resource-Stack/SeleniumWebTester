@@ -2,7 +2,7 @@ package com.rsi.dataObject;
 
 import java.util.ArrayList;
 
-import com.rsi.selenium.RsiChromeTester;
+import com.rsi.selenium.RsiTester;
 import com.rsi.utils.RsiTestingHelper;
 
 public class TestCase {

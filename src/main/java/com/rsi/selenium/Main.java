@@ -13,6 +13,7 @@ import org.apache.sling.commons.json.JSONException;
 import org.apache.sling.commons.json.JSONObject;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.remote.BrowserType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,9 +27,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class RsitesterMain {
-	final static Logger logger = Logger.getLogger(RsitesterMain.class);
+public class Main {
+	final static Logger logger = Logger.getLogger(Main.class);
 	static H2OApplication curApp = null;
+	static String browserType = BrowserType.CHROME;
 
 	// ARGS: mode ["headless"/"start-maximized"], schedulerID
 	public static void main(String[] args) {
@@ -46,7 +48,7 @@ public class RsitesterMain {
 		try {
 			stmt = conn.createStatement();
 			int schedulerID = args.length == 2 ? Integer.parseInt(args[1]) : -1;
-
+			browserType = args.length == 3 ? args[2] : BrowserType.CHROME;
 			System.out.println("Scheduler ID = " + schedulerID);
 			// Search based on schedulerID
 			scheduledSet = findResultFromSchedulerID(conn, stmt, schedulerID);
@@ -123,18 +125,18 @@ public class RsitesterMain {
 				ArrayList<String> statuses = new ArrayList<String>();
 				final String chromiumMode = chromeMode;
 				final ResultSet rs = scheduledSet;
-				ArrayList<RsiChromeTester> chromeTesters = new ArrayList<RsiChromeTester>();
+				ArrayList<RsiTester> chromeTesters = new ArrayList<RsiTester>();
 				final ArrayList<TestCase> testCaseList = testCases;
 				for (int i = 0; i < numberOfTimesToRun; i++) {
 					final Integer schedulerIndex = i + 1;
 					threadPool.submit(new Runnable() {
 						public void run() {
 							TestResult res = new TestResult();
-							RsiChromeTester chromeTester = null;
-							Integer resultSuiteId = RsitesterMain.createNewResultSuite(conn, currentSchedulerId,
-									currentSuiteId, schedulerIndex);
+							RsiTester chromeTester = null;
+							Integer resultSuiteId = Main.createNewResultSuite(conn, currentSchedulerId, currentSuiteId,
+									schedulerIndex);
 							try {
-								chromeTester = new RsiChromeTester(chromiumMode);
+								chromeTester = new RsiTester(chromiumMode, browserType);
 								chromeTesters.add(chromeTester);
 
 								try {
@@ -148,11 +150,11 @@ public class RsitesterMain {
 								} catch (NoSuchElementException nse) {
 									logErrorMessage("Element not found Error [ " + nse.getMessage() + " ]");
 									updateSchedulerStatus(conn, currentSchedulerId, "Error");
-									RsitesterMain.updateResultSuite(conn, resultSuiteId, 2);
+									Main.updateResultSuite(conn, resultSuiteId, 2);
 									return;
 								} catch (Exception e) {
 									e.printStackTrace();
-									RsitesterMain.updateResultSuite(conn, resultSuiteId, 2);
+									Main.updateResultSuite(conn, resultSuiteId, 2);
 								}
 
 								logDebugMessage("Now starting to process Scheduled Job Id [ " + rs.getString("id")
@@ -207,8 +209,7 @@ public class RsitesterMain {
 										}
 									}
 
-									RsitesterMain.updateResultSuite(conn, resultSuiteId,
-											res.getStatus() == "Failure" ? 2 : 1);
+									Main.updateResultSuite(conn, resultSuiteId, res.getStatus() == "Failure" ? 2 : 1);
 								}
 
 							} catch (SQLException e1) {
@@ -262,7 +263,7 @@ public class RsitesterMain {
 		}
 	}
 
-	private static TestResult executeTestCase(Connection conn, RsiChromeTester chromeTester, TestCase curCase,
+	private static TestResult executeTestCase(Connection conn, RsiTester chromeTester, TestCase curCase,
 			int resultSuiteId, int currentSchedulerId) {
 		TestResult res = new TestResult();
 		Boolean caseSuccess = true;
@@ -465,13 +466,14 @@ public class RsitesterMain {
 
 		try {
 			pstmt = conn.prepareStatement(
-					"INSERT INTO result_suites (rd_id, scheduler_id, test_suite_id, scheduler_index, start_time) VALUES(?,?,?,?,?)",
+					"INSERT INTO result_suites (rd_id, scheduler_id, test_suite_id, scheduler_index, start_time, created_at) VALUES(?,?,?,?,?,?)",
 					Statement.RETURN_GENERATED_KEYS);
 			pstmt.setInt(1, 3); // Running
 			pstmt.setInt(2, currentSchedulerId);
 			pstmt.setInt(3, currentSuiteId);
 			pstmt.setInt(4, schedulerIndex);
 			pstmt.setString(5, com.rsi.utils.RsiTestingHelper.returmTimeStamp());
+			pstmt.setString(6, com.rsi.utils.RsiTestingHelper.returmTimeStamp());
 
 			if (pstmt.execute()) {
 				logInfoMessage("Created new result suite.");

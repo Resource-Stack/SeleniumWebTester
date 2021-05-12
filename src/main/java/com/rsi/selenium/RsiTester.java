@@ -41,7 +41,6 @@ public class RsiTester {
 			options.addArguments("--" + runType);
 			driver = new ChromeDriver(options);
 		}
-
 	}
 
 	public TestResult loginToApp(String url_to_test, String userNameField, String passwordField, String btnField,

@@ -42,13 +42,12 @@ public class Main {
 		Statement stmt = null;
 		ResultSet scheduledSet = null;
 
-		String chromeMode = args.length == 0 ? "start-maximized" : args[0];
+		String browserMode = args.length == 0 ? "start-maximized" : args[0];
 		;
 		// STEP 2: Read the scheduler table.
 		try {
 			stmt = conn.createStatement();
 			int schedulerID = args.length == 2 ? Integer.parseInt(args[1]) : -1;
-			browserType = args.length == 3 ? args[2] : BrowserType.CHROME;
 			System.out.println("Scheduler ID = " + schedulerID);
 			// Search based on schedulerID
 			scheduledSet = findResultFromSchedulerID(conn, stmt, schedulerID);
@@ -59,8 +58,10 @@ public class Main {
 				int numberOfTimesToRun = scheduledSet.getInt("number_of_times");
 				Boolean flowNotCreated = scheduledSet.getBoolean("flow_not_defined");
 
+				setBrowserType(scheduledSet.getInt("browser_id"));
+
 				if (numberOfTimesToRun > 1) {
-					chromeMode = "headless";
+					browserMode = "headless";
 				}
 
 				if (curApp == null) {
@@ -123,7 +124,7 @@ public class Main {
 				ExecutorService threadPool = Executors.newFixedThreadPool(numberOfTimesToRun);
 
 				ArrayList<String> statuses = new ArrayList<String>();
-				final String chromiumMode = chromeMode;
+				final String chromiumMode = browserMode;
 				final ResultSet rs = scheduledSet;
 				ArrayList<RsiTester> chromeTesters = new ArrayList<RsiTester>();
 				final ArrayList<TestCase> testCaseList = testCases;
@@ -260,6 +261,30 @@ public class Main {
 					stmt = null;
 				}
 			}
+		}
+	}
+
+	private static void setBrowserType(int browserId) {
+		switch (browserId) {
+			case 1:
+				browserType = BrowserType.CHROME;
+				break;
+
+			case 2:
+				browserType = BrowserType.FIREFOX;
+				break;
+
+			case 3:
+				browserType = BrowserType.SAFARI;
+				break;
+
+			case 4:
+				browserType = BrowserType.EDGE;
+				break;
+
+			default:
+				browserType = BrowserType.CHROME;
+				break;
 		}
 	}
 
@@ -426,7 +451,7 @@ public class Main {
 			throws SQLException {
 		ResultSet rs = null;
 		rs = stmt.executeQuery(
-				"SELECT s.id id, s.test_suite_id, ISNULL(t.flow_state) as flow_not_defined, s.scheduled_date, s.number_of_times, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id AND s.id = '"
+				"SELECT s.id id, s.test_suite_id, s.browser_id, ISNULL(t.flow_state) as flow_not_defined, s.scheduled_date, s.number_of_times, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id AND s.id = '"
 						+ schedulerID.toString() + "' ORDER BY s.updated_at DESC LIMIT 1");
 
 		return rs;

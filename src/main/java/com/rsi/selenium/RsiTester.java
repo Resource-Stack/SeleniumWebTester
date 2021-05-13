@@ -1,9 +1,29 @@
 package com.rsi.selenium;
 
+import java.io.File;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import com.rsi.dataObject.TestResult;
 import com.rsi.utils.RsiTestingHelper;
+import org.apache.commons.io.FileUtils;
+
 import org.apache.log4j.Logger;
-import org.openqa.selenium.*;
+import org.openqa.selenium.Alert;
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -12,13 +32,6 @@ import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.BrowserType;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.io.File;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 public class RsiTester {
 	final static Logger logger = Logger.getLogger(RsiTester.class);
@@ -29,15 +42,16 @@ public class RsiTester {
 	}
 
 	public RsiTester(String runType, String browserType) {
+		ResourceBundle rb = ResourceBundle.getBundle("rstester");
 		if (browserType == BrowserType.FIREFOX) {
-			System.setProperty("webdriver.gecko.driver", "/home/sparsha/Downloads/geckodriver");
+			System.setProperty("webdriver.gecko.driver", rb.getString("FIREFOX_PATH"));
 			FirefoxOptions options = new FirefoxOptions();
 			options.setHeadless(runType == "headless");
 			driver = new FirefoxDriver(options);
 		} else {
 			ChromeOptions options = new ChromeOptions();
 
-			System.setProperty("webdriver.chrome.driver", "/home/sparsha/Downloads/chromedriver");
+			System.setProperty("webdriver.chrome.driver", rb.getString("CHROME_PATH"));
 			options.addArguments("--" + runType);
 			driver = new ChromeDriver(options);
 		}
@@ -488,8 +502,6 @@ public class RsiTester {
 	public String takeScreenshot(Connection conn, long resultCaseId) {
 		String fileName = new Long(resultCaseId).toString() + ".png";
 		try {
-			TakesScreenshot ts = (TakesScreenshot) driver;
-
 			File source = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
 			FileUtils.copyFile(source, new File("./Screenshots/" + fileName));
 			logger.info("Screenshot taken");

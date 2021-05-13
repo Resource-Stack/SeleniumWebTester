@@ -69,16 +69,13 @@ public class H2OTesterConnectionFactory {
 	public Connection getDatabaseConnection() {
 		if (dbInstance == null) {
 			try {
-				ResourceBundle s = ResourceBundle.getBundle("dbconfig");
+				ResourceBundle rb = ResourceBundle.getBundle("dbconfig");
 
-				// dbInstance = DriverManager.getConnection(
-				// 		s.getString("DBURL") + "?user=" + s.getString("DBUSER") + "&password=" + s.getString("DBPASS"));
+				String connectionString = rb.getString("DBURL")
+						+ "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
+						+ "&user=" + rb.getString("DBUSER") + "&password=" + rb.getString("DBPASS");
 
-				dbInstance = DriverManager.getConnection(
-
-						"jdbc:mysql://localhost:3306/selenium_rails?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
-
-								+ "&user=" + "sparsha" + "&password=" + "root");
+				dbInstance = DriverManager.getConnection(connectionString);
 
 			} catch (SQLException e) {
 				e.printStackTrace();

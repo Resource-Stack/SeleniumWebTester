@@ -13,6 +13,7 @@ import org.apache.sling.commons.json.JSONException;
 import org.apache.sling.commons.json.JSONObject;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.remote.BrowserType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,9 +27,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class RsitesterMain {
-	final static Logger logger = Logger.getLogger(RsitesterMain.class);
+public class Main {
+	final static Logger logger = Logger.getLogger(Main.class);
 	static H2OApplication curApp = null;
+	static String browserType = BrowserType.CHROME;
 
 	// ARGS: mode ["headless"/"start-maximized"], schedulerID
 	public static void main(String[] args) {
@@ -40,14 +42,12 @@ public class RsitesterMain {
 		Statement stmt = null;
 		ResultSet scheduledSet = null;
 
-		String chromeMode = args.length == 0 ? "start-maximized" : args[0];
+		String browserMode = args.length == 0 ? "start-maximized" : args[0];
 		;
 		// STEP 2: Read the scheduler table.
 		try {
 			stmt = conn.createStatement();
 			int schedulerID = args.length == 2 ? Integer.parseInt(args[1]) : -1;
-
-			System.out.println("Scheduler ID = " + schedulerID);
 			// Search based on schedulerID
 			scheduledSet = findResultFromSchedulerID(conn, stmt, schedulerID);
 
@@ -57,8 +57,10 @@ public class RsitesterMain {
 				int numberOfTimesToRun = scheduledSet.getInt("number_of_times");
 				Boolean flowNotCreated = scheduledSet.getBoolean("flow_not_defined");
 
+				setBrowserType(scheduledSet.getInt("browser_id"));
+
 				if (numberOfTimesToRun > 1) {
-					chromeMode = "headless";
+					browserMode = "headless";
 				}
 
 				if (curApp == null) {
@@ -121,20 +123,20 @@ public class RsitesterMain {
 				ExecutorService threadPool = Executors.newFixedThreadPool(numberOfTimesToRun);
 
 				ArrayList<String> statuses = new ArrayList<String>();
-				final String chromiumMode = chromeMode;
+				final String chromiumMode = browserMode;
 				final ResultSet rs = scheduledSet;
-				ArrayList<RsiChromeTester> chromeTesters = new ArrayList<RsiChromeTester>();
+				ArrayList<RsiTester> chromeTesters = new ArrayList<RsiTester>();
 				final ArrayList<TestCase> testCaseList = testCases;
 				for (int i = 0; i < numberOfTimesToRun; i++) {
 					final Integer schedulerIndex = i + 1;
 					threadPool.submit(new Runnable() {
 						public void run() {
 							TestResult res = new TestResult();
-							RsiChromeTester chromeTester = null;
-							Integer resultSuiteId = RsitesterMain.createNewResultSuite(conn, currentSchedulerId,
-									currentSuiteId, schedulerIndex);
+							RsiTester chromeTester = null;
+							Integer resultSuiteId = Main.createNewResultSuite(conn, currentSchedulerId, currentSuiteId,
+									schedulerIndex);
 							try {
-								chromeTester = new RsiChromeTester(chromiumMode);
+								chromeTester = new RsiTester(chromiumMode, browserType);
 								chromeTesters.add(chromeTester);
 
 								try {
@@ -148,11 +150,11 @@ public class RsitesterMain {
 								} catch (NoSuchElementException nse) {
 									logErrorMessage("Element not found Error [ " + nse.getMessage() + " ]");
 									updateSchedulerStatus(conn, currentSchedulerId, "Error");
-									RsitesterMain.updateResultSuite(conn, resultSuiteId, 2);
+									Main.updateResultSuite(conn, resultSuiteId, 2);
 									return;
 								} catch (Exception e) {
 									e.printStackTrace();
-									RsitesterMain.updateResultSuite(conn, resultSuiteId, 2);
+									Main.updateResultSuite(conn, resultSuiteId, 2);
 								}
 
 								logDebugMessage("Now starting to process Scheduled Job Id [ " + rs.getString("id")
@@ -207,8 +209,7 @@ public class RsitesterMain {
 										}
 									}
 
-									RsitesterMain.updateResultSuite(conn, resultSuiteId,
-											res.getStatus() == "Failure" ? 2 : 1);
+									Main.updateResultSuite(conn, resultSuiteId, res.getStatus() == "Failure" ? 2 : 1);
 								}
 
 							} catch (SQLException e1) {
@@ -262,7 +263,31 @@ public class RsitesterMain {
 		}
 	}
 
-	private static TestResult executeTestCase(Connection conn, RsiChromeTester chromeTester, TestCase curCase,
+	private static void setBrowserType(int browserId) {
+		switch (browserId) {
+			case 1:
+				browserType = BrowserType.CHROME;
+				break;
+
+			case 2:
+				browserType = BrowserType.FIREFOX;
+				break;
+
+			case 3:
+				browserType = BrowserType.SAFARI;
+				break;
+
+			case 4:
+				browserType = BrowserType.EDGE;
+				break;
+
+			default:
+				browserType = BrowserType.CHROME;
+				break;
+		}
+	}
+
+	private static TestResult executeTestCase(Connection conn, RsiTester chromeTester, TestCase curCase,
 			int resultSuiteId, int currentSchedulerId) {
 		TestResult res = new TestResult();
 		Boolean caseSuccess = true;
@@ -425,7 +450,7 @@ public class RsitesterMain {
 			throws SQLException {
 		ResultSet rs = null;
 		rs = stmt.executeQuery(
-				"SELECT s.id id, s.test_suite_id, ISNULL(t.flow_state) as flow_not_defined, s.scheduled_date, s.number_of_times, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id AND s.id = '"
+				"SELECT s.id id, s.test_suite_id, s.browser_id, ISNULL(t.flow_state) as flow_not_defined, s.scheduled_date, s.number_of_times, t.environment_id environment_id FROM schedulers s, test_suites t WHERE s.test_suite_id = t.id AND s.id = '"
 						+ schedulerID.toString() + "' ORDER BY s.updated_at DESC LIMIT 1");
 
 		return rs;
@@ -465,13 +490,14 @@ public class RsitesterMain {
 
 		try {
 			pstmt = conn.prepareStatement(
-					"INSERT INTO result_suites (rd_id, scheduler_id, test_suite_id, scheduler_index, start_time) VALUES(?,?,?,?,?)",
+					"INSERT INTO result_suites (rd_id, scheduler_id, test_suite_id, scheduler_index, start_time, created_at) VALUES(?,?,?,?,?,?)",
 					Statement.RETURN_GENERATED_KEYS);
 			pstmt.setInt(1, 3); // Running
 			pstmt.setInt(2, currentSchedulerId);
 			pstmt.setInt(3, currentSuiteId);
 			pstmt.setInt(4, schedulerIndex);
 			pstmt.setString(5, com.rsi.utils.RsiTestingHelper.returmTimeStamp());
+			pstmt.setString(6, com.rsi.utils.RsiTestingHelper.returmTimeStamp());
 
 			if (pstmt.execute()) {
 				logInfoMessage("Created new result suite.");

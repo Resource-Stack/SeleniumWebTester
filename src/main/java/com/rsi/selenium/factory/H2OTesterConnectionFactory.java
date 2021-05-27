@@ -72,7 +72,7 @@ public class H2OTesterConnectionFactory {
 				ResourceBundle rb = ResourceBundle.getBundle("dbconfig");
 
 				String connectionString = rb.getString("DBURL")
-						+ "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
+						+ "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false"
 						+ "&user=" + rb.getString("DBUSER") + "&password=" + rb.getString("DBPASS");
 
 				dbInstance = DriverManager.getConnection(connectionString);

@@ -4,6 +4,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -206,12 +207,15 @@ public class RsiTester {
 				userNameElement = driver.findElement(By.id(fieldName));
 			}
 
-			if (fieldType.equalsIgnoreCase("label") || fieldType.equalsIgnoreCase("text")
-					|| fieldType.equalsIgnoreCase("textarea")) {
+			fieldType = fieldType.toLowerCase();
+
+			String[] valueTags = new String[] { "label", "text", "textArea" };
+
+			String[] textTags = new String[] { "th", "td", "li", "p", "div", "h1", "h2", "h3", "h4", "h5", "h6" };
+
+			if (Arrays.asList(valueTags).contains(fieldType)) {
 				valueOfElement = userNameElement.getAttribute("value");
-			} else if (fieldType.equalsIgnoreCase("th") || fieldType.equalsIgnoreCase("td")
-					|| fieldType.equalsIgnoreCase("li") || fieldType.equalsIgnoreCase("p")
-					|| fieldType.equalsIgnoreCase("div")) {
+			} else if (Arrays.asList(textTags).contains(fieldType)) {
 				valueOfElement = userNameElement.getText();
 			}
 

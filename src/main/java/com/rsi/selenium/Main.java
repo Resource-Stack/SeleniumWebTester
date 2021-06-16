@@ -314,9 +314,11 @@ public class Main {
 				} catch (NoSuchElementException nse) {
 					logErrorMessage("INSPECT: Failed because no such element exists");
 					logErrorMessage(nse.getMessage());
+					res.setStatus("Failure");
 					caseSuccess = false;
 				} catch (InterruptedException ie) {
 					logErrorMessage(ie.getMessage());
+					res.setStatus("Failure");
 					caseSuccess = false;
 					ie.printStackTrace();
 				}
@@ -328,10 +330,12 @@ public class Main {
 					sleepIfInstructedTo(curCase.getSleeps());
 				} catch (NoSuchElementException nse) {
 					logErrorMessage("ACTION: Failed because no such element exists");
+					res.setStatus("Failure");
 					logErrorMessage(nse.getMessage());
 					caseSuccess = false;
 				} catch (InterruptedException ie) {
 					logErrorMessage(ie.getMessage());
+					res.setStatus("Failure");
 					caseSuccess = false;
 					ie.printStackTrace();
 				}
@@ -342,9 +346,11 @@ public class Main {
 							curCase.getEnterAction(), currentTestSequence);
 					sleepIfInstructedTo(curCase.getSleeps());
 				} catch (NoSuchElementException nse) {
+					res.setStatus("Failure");
 					logErrorMessage("Error when handling Input type case... " + nse.getMessage());
 					caseSuccess = false;
 				} catch (InterruptedException ie) {
+					res.setStatus("Failure");
 					logErrorMessage(ie.getMessage());
 					caseSuccess = false;
 				}

@@ -5,7 +5,7 @@ A Database driven Testing tool for Wbe Based Applications
 mvn clean install
 
 # to run
-mvn exec:java -Dexec.mainClass="com.rsi.selenium.RsitesterMain" -Dmaven.test.failure.ignore=true
+mvn exec:java -Dexec.mainClass="com.rsi.selenium.Main" -Dmaven.test.failure.ignore=true
 
 # database configuration
 src/main/resources/dbconfig.properties

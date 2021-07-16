@@ -211,7 +211,7 @@ public class RsiTester {
 
 			String[] valueTags = new String[] { "label", "text", "textArea" };
 
-			String[] textTags = new String[] { "th", "td", "li", "p", "div", "h1", "h2", "h3", "h4", "h5", "h6" };
+			String[] textTags = new String[] { "span", "th", "td", "li", "p", "div", "h1", "h2", "h3", "h4", "h5", "h6" };
 
 			if (Arrays.asList(valueTags).contains(fieldType)) {
 				valueOfElement = userNameElement.getAttribute("value");
